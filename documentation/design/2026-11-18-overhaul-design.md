@@ -157,8 +157,9 @@ blocks at `local-fs.target` (`machines/tower.nix:38-50`).
 Deleted: `profiles/cosmic.nix`, `profiles/gnome.nix`, `profiles/cinnamon.nix`,
 `modules/cosmic.nix`, `modules/gnome.nix`, `modules/cinnamon.nix`, the COSMIC
 install guide, and the 160 commented-out COSMIC lines in `home/hunter.nix`.
-`tower` keeps KDE. `work-laptop` moves from COSMIC to XFCE unless the owner says
-otherwise: it is a work machine, and COSMIC is the desktop being removed.
+`tower` keeps KDE. `work-laptop` moves from COSMIC to KDE, per the owner
+decision: one desktop role then covers both hosts, at the cost of a heavier
+session on laptop hardware.
 
 `scripts/switch-desktop.sh` is rewritten against host-scoped roles. Today it
 lists no Hyprland (`scripts/switch-desktop.sh:11-17`) and builds removed
@@ -194,10 +195,13 @@ Revised shape:
   including direct DNS. The host runs an allowlisting TLS CONNECT proxy
   (hostname allowlist, no IP passthrough). Clients use it as
   `http_proxy`/`https_proxy` and have no other resolver, so DNS tunnelling is
-  not available.
-- **Token:** brokered per session into the agent-home tmpfs, readable and
-  writable only by the mapped uid, destroyed at stop. The long-lived credential
-  never enters the sandbox.
+  not available. The owner's allowlist: GitHub, the agent vendor API,
+  `cache.nixos.org`, the npm registry, PyPI, and the Go module proxy. A new entry
+  needs a reason recorded beside it, per the risks table.
+- **Token:** no long-lived credential exists. Each session completes a device
+  flow against the agent vendor, and the short-lived token is brokered into the
+  agent-home tmpfs, readable and writable only by the mapped uid, destroyed at
+  stop. Nothing durable exists to leak from the sandbox.
 - **Limits:** `TasksMax`, `MemoryMax`, `CPUQuota` on the nspawn scope, so a fork
   bomb or memory hog inside does not take the desktop down.
 - **Lifecycle:** a transient unit owned by the host, not a shell trap. A crashed
@@ -225,9 +229,9 @@ removed from `roles/server.nix`.
 configured per host, with the flake path an option rather than a hardcoded
 `/home/hunter/Documents/nixos-base`. `nix.gc` stays beside it.
 
-Open point: auto-upgrading from a mutable local checkout is not a reviewed
-history. The owner picks between "update the local checkout weekly" and "track
-the remote branch and update only commits that passed CI".
+Open point: none. The owner tracks the remote branch and updates only commits
+that passed CI, so nothing reaches a host without a merged PR. A local
+experiment needs an explicit `nixos-rebuild switch`.
 
 ### D7. Inputs: one nixpkgs, no stable overlay, no flake-utils
 
@@ -242,6 +246,8 @@ the remote branch and update only commits that passed CI".
 
 - `nixosConfigurations`: one entry per host. The six `<desktop>-workstation`
   outputs disappear; desktop choice becomes a role import inside the host.
+  `base-server` keeps its current role-only output until phase 2 gives it a host
+  entry point, and stays in the CI build matrix in the meantime.
 - `formatter.x86_64-linux = nixfmt-rfc-style`.
 - `checks.x86_64-linux`: formatting check, `statix`, `deadnix`, layering check,
   and one `nixosTest` per host.
@@ -259,7 +265,7 @@ the remote branch and update only commits that passed CI".
 | Job | What it proves |
 | --- | --- |
 | `flake-check` | `nix flake check` passes: formatting, statix, deadnix, layering, `nixosTest` |
-| `build` (matrix: tower, work-laptop) | `nix build .#nixosConfigurations.<host>.config.system.build.toplevel` |
+| `build` (matrix: tower, work-laptop, base-server) | `nix build .#nixosConfigurations.<host>.config.system.build.toplevel` |
 | `branch-name` | branch matches the allowed prefixes, using `github.head_ref` and exempting `main` |
 
 Deleted from CI: per-file `nix-instantiate --parse`, the `grep` secret scan that
@@ -373,17 +379,17 @@ Every commit keeps CI green, so a bisect stays useful.
 | Two full builds are slow | Measure first. Public runners are free; if wall time hurts, build only hosts touched by the diff |
 | Dropping `mitigations=off` costs gaming performance | Owner may veto D5; it is one line |
 
-## Owner decisions required
+## Owner decisions, answered 2026-11-18
 
-1. Does `work-laptop` stay in this repo, and does it move to XFCE?
-2. Veto D5 (`mitigations=off` removal) or keep it?
-3. Egress allowlist contents beyond GitHub, the agent vendor API and
-   `cache.nixos.org`.
-4. Auto-upgrade from the mutable local checkout, or from reviewed remote
-   commits only?
-5. Keep a `server` role (`base-server`) at all, or is tower the only headless
-   case?
-6. Long-lived agent credential: which one, and how short is "short-lived"?
+| # | Question | Answer | Consequence |
+| --- | --- | --- | --- |
+| 1 | Does `work-laptop` stay, and which desktop? | Stays, moves to KDE | D3: one desktop role covers both hosts, heavier on laptop hardware |
+| 2 | Veto D5 (dropping `mitigations=off`)? | No veto | Kernel mitigations on for every host |
+| 3 | Egress allowlist beyond GitHub, the agent API and `cache.nixos.org` | npm registry, PyPI, Go module proxy | D4: six entries total |
+| 4 | Auto-upgrade source | Reviewed remote commits only | D6: follows `origin/main`, so a PR gates every change |
+| 5 | Keep a server role? | Keep `base-server` as is | Stays in the CI build matrix, so it cannot rot unnoticed |
+| 6 | Long-lived agent credential? | None; per-session device flow | D4 token bullet: nothing durable to leak |
+| 7 | Rename `hunter` to `cycl`? | No, `hunter` stays | No rename in this overhaul |
 
 ## Appendix: adversarial review round 1
 
