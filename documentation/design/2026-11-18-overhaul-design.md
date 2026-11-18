@@ -44,7 +44,7 @@ reinstall and no disk encryption work is in scope.
   the sandbox design is what keeps it that way.
 - Remote access (Tailscale, VPN, bastion). Out of scope, noted as a follow-up.
 - A microVM tier inside the flake. A libvirt VM on the tower is the escalation
-  path, provisioned separately (see `documentation/design/2026-11-18-opentofu-devserver.md`).
+  path, provisioned separately (to be designed separately).
 
 ## Constraints
 

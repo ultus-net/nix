@@ -61,12 +61,12 @@ To add a new desktop environment to this repository:
    }
    ```
 
-3. **Add to flake.nix**:
+3. **Import the role in a host**:
    ```nix
-   nixosConfigurations = {
-     # ... existing configs
-     <desktop>-workstation = mkSystem ./roles/<desktop>.nix;
-   };
+   # hosts/<host>/default.nix
+   imports = [
+     ../../roles/<desktop>.nix
+   ];
    ```
 
 4. **Update documentation**:
@@ -77,7 +77,7 @@ To add a new desktop environment to this repository:
 5. **Test your changes**:
    ```bash
    nix flake check
-   nix build .#nixosConfigurations.<desktop>-workstation.config.system.build.toplevel
+   nix build .#nixosConfigurations.<host>.config.system.build.toplevel
    ```
 
 ### Code Style

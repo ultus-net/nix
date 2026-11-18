@@ -6,7 +6,7 @@ This document describes the CI/CD pipeline for this NixOS flake repository.
 
 The CI/CD pipeline performs the following checks:
 - Validates flake structure and metadata
-- Dry-runs and evaluates 7 configurations (6 desktops + 1 headless)
+- Dry-runs and evaluates the three hosts: `base-server`, `tower` and `work-laptop`
 - Optionally tests VM boots for two configurations on labeled pull requests
 - Checks module syntax and references
 - Scans for hardcoded secrets
@@ -20,7 +20,7 @@ These lightweight checks fail fast if there are basic issues:
 1. **Basic Validation** (~1 min)
    - Installs Nix (required for syntax checking)
    - Validates Nix file syntax using `nix-instantiate`
-   - Checks profile/machine structure
+   - Checks the host/role layering with `scripts/check-layering.py`
    - Validates Home Manager imports
 
 2. **Flake Structure Validation** (~2 min)
@@ -32,7 +32,7 @@ These lightweight checks fail fast if there are basic issues:
 These ensure all configurations evaluate and their builds can be planned:
 
 3. **Configuration Matrix** (runs in parallel)
-   - Matrix check for all 7 configurations
+   - Matrix check for `base-server`, `tower` and `work-laptop`
    - Dry-run system builds
    - Checks configurations evaluate without errors
    - Cachix caching is not enabled
@@ -41,7 +41,7 @@ These ensure all configurations evaluate and their builds can be planned:
 
 4. **Module Validation** (~1 min)
    - Validates Nix syntax for all module files
-   - Verifies modules are referenced in profiles
+   - Verifies modules are referenced in roles
    - Checks for broken symlinks
 
 5. **Security Checks** (~1 min)
@@ -102,7 +102,7 @@ You can build and run a VM locally:
 
 ```bash
 # Build a VM for testing
-nix build .#nixosConfigurations.gnome-workstation.config.system.build.vm
+nix build .#nixosConfigurations.tower.config.system.build.vm
 
 # Run the VM interactively
 ./result/bin/run-*-vm
@@ -119,12 +119,9 @@ The workflow cancels in-progress runs for the same branch, preventing wasted res
 | Configuration | Dry-run/Evaluation | VM Boot Test | Notes |
 |---------------|------------|--------------|-------|
 | base-server | Yes | Label-gated | Headless configuration |
-| cosmic-workstation | Yes | No | COSMIC desktop |
-| gnome-workstation | Yes | No | GNOME desktop |
-| kde-workstation | Yes | No | KDE Plasma desktop |
-| cinnamon-workstation | Yes | No | Cinnamon desktop |
-| xfce-workstation | Yes | Label-gated | XFCE desktop |
-| hyprland-workstation | Yes | No | Hyprland desktop |
+| tower | Yes | No | KDE Plasma desktop |
+| work-laptop | Yes | No | KDE Plasma laptop |
+| xfce-workstation | No (VM only) | Label-gated | XFCE desktop |
 
 VM boot tests are limited to `base-server` and `xfce-workstation` and run only when a pull request has the `test-vm-boot` label.
 
@@ -145,7 +142,7 @@ The VM didn't reach multi-user.target within the allowed time. This can happen f
 3. Review the serial log for boot errors or hangs
 
 **Common causes:**
-- **Slow evaluation/build** - Some desktop environments (especially GNOME/KDE) take longer to evaluate
+- **Slow evaluation/build** - Some desktop environments (especially KDE) take longer to evaluate
 - **Missing dependencies** - Check for service failures in the log
 - **Kernel panic** - Look for "Kernel panic" or "Oops" messages
 - **Systemd service timeout** - A service might be waiting for a timeout
@@ -160,7 +157,7 @@ The VM didn't reach multi-user.target within the allowed time. This can happen f
 **Testing locally:**
 ```bash
 # Build and test VM locally
-nix build .#nixosConfigurations.gnome-workstation.config.system.build.vm
+nix build .#nixosConfigurations.tower.config.system.build.vm
 QEMU_KERNEL_PARAMS="console=ttyS0" ./result/bin/run-*-vm -nographic -m 2048
 ```
 
@@ -175,7 +172,7 @@ GitHub Actions runners support KVM. If this fails, it's likely a runner configur
 
 ## Adding New Configurations
 
-When adding a new desktop environment or profile:
+When adding a new host:
 
 1. Add it to the `build-configurations` matrix
 2. Optionally add it to `vm-boot-tests` matrix if critical
@@ -186,8 +183,8 @@ Example:
 matrix:
   config:
     - base-server
-    - cosmic-workstation
-    - your-new-config  # Add here
+    - tower
+    - your-new-host  # Add here
 ```
 
 ## Contributing

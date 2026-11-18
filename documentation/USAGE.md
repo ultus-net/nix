@@ -4,13 +4,13 @@
 
 ```bash
 # Switch desktops (already installed system)
-sudo nixos-rebuild switch --flake .#kde-workstation
+sudo nixos-rebuild switch --flake .#tower
 
 # Update packages
-nix flake update && sudo nixos-rebuild switch --flake .#your-config
+nix flake update && sudo nixos-rebuild switch --flake .#your-host
 
 # Test in VM before deploying
-nix build .#nixosConfigurations.cosmic-workstation.config.system.build.vm
+nix build .#nixosConfigurations.tower.config.system.build.vm
 ./result/bin/run-*-vm
 
 # Create custom machine config (advanced)
@@ -33,39 +33,34 @@ cp hosts/example/default.nix hosts/my-machine/default.nix
    ```bash
    nixos-generate-config --root /mnt
    ```
-5. Install with your chosen desktop:
+5. Install a host:
    ```bash
-   nixos-install --flake /mnt/nix#gnome-workstation
+   nixos-install --flake /mnt/nix#tower
    ```
 
 See `INSTALL.md` for detailed installation instructions.
 
 ## Switching Desktops
 
-After installation, you can switch between desktop environments:
+A host chooses its desktop by the role it imports. Edit the host entry point,
+change the role, then rebuild:
 
-### Switch to COSMIC
 ```bash
-sudo nixos-rebuild switch --flake .#cosmic-workstation
+# hosts/tower/default.nix imports ../../roles/kde.nix
+sudo nixos-rebuild switch --flake .#tower
 ```
 
-### Switch to GNOME
-```bash
-sudo nixos-rebuild switch --flake .#gnome-workstation
-```
-
-### Switch to KDE
-```bash
-sudo nixos-rebuild switch --flake .#kde-workstation
-```
+Available roles are `roles/kde.nix`, `roles/hyprland.nix`, `roles/xfce.nix`
+and `roles/base.nix` for a headless host. `scripts/switch-desktop.sh` still
+builds the `<desktop>-workstation` outputs, which are being retired.
 
 ### Test Without Switching
 ```bash
 # Build without activating
-nixos-rebuild build --flake .#kde-workstation
+nixos-rebuild build --flake .#tower
 
 # Or using nix directly
-nix build .#nixosConfigurations.kde-workstation.config.system.build.toplevel
+nix build .#nixosConfigurations.tower.config.system.build.toplevel
 ```
 
 ## Helper Scripts
@@ -74,14 +69,12 @@ nix build .#nixosConfigurations.kde-workstation.config.system.build.toplevel
 Use the provided script to build or switch configurations:
 
 ```bash
-# Build the default (cosmic) configuration
+# Build the default configuration
 ./scripts/switch-host.sh
 
-# Switch to GNOME (requires root)
-sudo ./scripts/switch-host.sh .#gnome-workstation
-
-# Switch to KDE (requires root)
-sudo ./scripts/switch-host.sh .#kde-workstation
+# Switch a host (requires root)
+sudo ./scripts/switch-host.sh .#tower
+sudo ./scripts/switch-host.sh .#work-laptop
 ```
 
 ### Desktop Switcher
@@ -101,13 +94,13 @@ See `scripts/README.md` for complete script documentation.
 ## Creating Your Own Machine Configuration
 
 **When do you need this?** 
-- You want to customize beyond what profiles offer
+- You want to customize beyond what roles offer
 - You're setting up multiple machines with different hardware
 - You want machine-specific settings (hostname, users, hardware config)
 
 **Don't need this if:**
-- You just want to use a pre-built desktop (use profiles directly)
-- You're testing different desktops (just switch between profiles)
+- You just want to use a pre-built desktop (import a role)
+- You're testing different desktops (just change the role import)
 
 ### Steps:
 
@@ -123,7 +116,7 @@ See `scripts/README.md` for complete script documentation.
      imports = [
        ../../modules/base.nix        # Shared defaults
        ./hardware.nix                # Your hardware config
-       ../../roles/gnome.nix         # Choose your desktop
+       ../../roles/kde.nix           # Choose your desktop
      ];
 
      # Set your hostname
@@ -173,8 +166,7 @@ imports = [
 ];
 
 gaming.enable = true;
-gaming.steam = true;
-gaming.lutris = true;
+gaming.enableSteam = true;
 ```
 
 ### Add Development Tools
@@ -182,8 +174,6 @@ gaming.lutris = true;
 imports = [
   ../modules/development.nix
 ];
-
-development.enable = true;
 ```
 
 ### Laptop Configuration
@@ -191,9 +181,6 @@ development.enable = true;
 imports = [
   ../modules/laptop.nix
 ];
-
-laptop.enable = true;
-laptop.touchpad.enable = true;
 ```
 
 See `FEATURES.md` for all available modules.
@@ -204,7 +191,7 @@ Build and run a VM to test configurations before deploying:
 
 ```bash
 # Build VM
-nix build .#nixosConfigurations.gnome-workstation.config.system.build.vm
+nix build .#nixosConfigurations.work-laptop.config.system.build.vm
 
 # Run VM
 ./result/bin/run-*-vm
@@ -223,7 +210,7 @@ nix flake lock --update-input nixpkgs
 
 ### Rebuild After Update
 ```bash
-sudo nixos-rebuild switch --flake .#your-config
+sudo nixos-rebuild switch --flake .#your-host
 ```
 
 ## Rolling Back
@@ -251,10 +238,10 @@ Before pushing changes, test locally:
 nix flake check
 
 # Build specific configuration
-nix build .#nixosConfigurations.gnome-workstation.config.system.build.toplevel
+nix build .#nixosConfigurations.tower.config.system.build.toplevel
 
 # Test VM boot
-nix build .#nixosConfigurations.gnome-workstation.config.system.build.vm
+nix build .#nixosConfigurations.work-laptop.config.system.build.vm
 ./result/bin/run-*-vm
 ```
 
@@ -264,7 +251,7 @@ If you encounter issues:
 
 1. Check `TROUBLESHOOTING.md` for common problems and solutions
 2. Review logs: `journalctl -xe`
-3. Verify configuration: `nixos-rebuild dry-run --flake .#your-config`
+3. Verify configuration: `nixos-rebuild dry-run --flake .#your-host`
 4. Ask for help in the NixOS community channels
 
 ## Next Steps

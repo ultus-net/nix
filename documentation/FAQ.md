@@ -5,15 +5,14 @@
 ### Q: Which desktop environment should I choose?
 
 **For beginners:**
-- **GNOME** - Most polished, works out of the box
-- **Cinnamon** - Familiar Windows-like interface
+- **KDE** - Feature-rich and configurable, works out of the box
 - **XFCE** - Lightweight and stable
 
 **For advanced users:**
-- **COSMIC** - Cutting-edge, modern Wayland desktop (may have bugs)
-- **KDE** - Highly customizable, feature-rich
+- **Hyprland** - Dynamic tiling Wayland compositor
 
 **For older hardware:**
+- **XFCE** - The lightest of the three
 
 See the desktop comparison table in [README.md](../README.md) for details.
 
@@ -46,13 +45,13 @@ The "hunter" username is just an example. To use your own:
    - Change `machines.users.hunter` to `machines.users.yourusername`
    - Change `home-manager.users.hunter` to `home-manager.users.yourusername`
 3. Update the import: `home-manager.users.yourusername = import ../home/yourusername.nix;`
-4. Rebuild: `sudo nixos-rebuild switch --flake .#your-config`
+4. Rebuild: `sudo nixos-rebuild switch --flake .#your-host`
 
 ### Q: Do I need to create a machine config for my first install?
 
 **No!** For your first installation, use the pre-built profiles directly:
 ```bash
-nixos-install --flake /mnt/nix#gnome-workstation
+nixos-install --flake /mnt/nix#tower
 ```
 
 Create custom machine configs later when you want to:
@@ -70,17 +69,17 @@ Create custom machine configs later when you want to:
 nix flake update
 
 # Rebuild with new packages
-sudo nixos-rebuild switch --flake .#your-config
+sudo nixos-rebuild switch --flake .#your-host
 
 # Or in one command
-nix flake update && sudo nixos-rebuild switch --flake .#your-config
+nix flake update && sudo nixos-rebuild switch --flake .#your-host
 ```
 
 ### Q: How do I switch desktop environments?
 
 ```bash
 # Switch to a different desktop
-sudo nixos-rebuild switch --flake .#kde-workstation
+sudo nixos-rebuild switch --flake .#tower
 
 # Or use the helper script
 ./scripts/switch-desktop.sh kde
@@ -115,7 +114,7 @@ machines.users = {
 };
 ```
 
-Then rebuild: `sudo nixos-rebuild switch --flake .#your-config`
+Then rebuild: `sudo nixos-rebuild switch --flake .#your-host`
 
 ### Q: How do I rollback to a previous generation?
 
@@ -145,6 +144,7 @@ Add to your machine configuration:
   ];
   
   gaming.enable = true;
+  gaming.enableSteam = true;
 }
 ```
 
@@ -158,12 +158,11 @@ Then rebuild. This installs Steam, Lutris, MangoHUD, and gaming optimizations.
   imports = [
     ../modules/laptop.nix
   ];
-  
-  laptop.enable = true;
 }
 ```
 
-This enables TLP (power management), touchpad configuration, and battery optimization.
+The module applies its defaults on import. That covers power-profiles-daemon,
+thermald, libinput touchpad handling, Bluetooth, and upower.
 
 ### Q: Can I install Flatpak apps?
 

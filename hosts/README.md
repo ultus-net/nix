@@ -19,7 +19,7 @@ Example `hosts/my-pc/default.nix`:
   # Shared defaults, the chosen role, and the shared users module.
   imports = [
     ../../modules/base.nix
-    ../../roles/cosmic.nix
+    ../../roles/kde.nix
     ../../modules/common-users.nix
     ./hardware.nix  # generated during install
   ];

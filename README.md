@@ -6,13 +6,11 @@ A modular NixOS flake for desktop workstations, servers, and multiple desktop en
 
 ## Quick Start
 
-For a graphical installation, see the [Calamares installation guide](documentation/QUICK-INSTALL-CALAMARES.md).
-
 For a manual installation:
 ```bash
 # Clone and install during NixOS installation
 cd /mnt && git clone https://github.com/ultus-net/nix
-nixos-install --flake /mnt/nix#gnome-workstation
+nixos-install --flake /mnt/nix#tower
 ```
 
 After the first boot:
@@ -26,20 +24,14 @@ See [INSTALL.md](documentation/INSTALL.md) for the full installation procedure.
 
 | Desktop | Display | Weight | Description |
 |---------|---------|--------|-------------|
-| **COSMIC** | Wayland | Medium | System76's Rust-based desktop |
-| **GNOME** | Wayland | Medium | GNOME Shell with extensions |
 | **KDE** | Wayland/X11 | Heavy | Feature-rich Plasma 6 |
-| **Cinnamon** | X11 | Medium | Linux Mint's traditional UI |
 | **XFCE** | X11 | Light | Lightweight desktop environment |
 | **Hyprland** | Wayland | Light | Dynamic tiling Wayland compositor |
 | **Base** | None | Minimal | Headless server |
 
-Switch desktops anytime: `./scripts/switch-desktop.sh cosmic`
-
 ## Documentation
 
 ### Getting Started
-- **[QUICK-INSTALL-CALAMARES.md](documentation/QUICK-INSTALL-CALAMARES.md)** - Graphical installation
 - **[INSTALL.md](documentation/INSTALL.md)** - Manual installation
 - **[USAGE.md](documentation/USAGE.md)** - Day-to-day usage and examples
 - **[FEATURES.md](documentation/FEATURES.md)** - Available desktops and modules
@@ -60,7 +52,7 @@ Switch desktops anytime: `./scripts/switch-desktop.sh cosmic`
 
 ## Features
 
-- Modular profiles for gaming, multimedia, development, and desktop environments
+- Modular roles for gaming, multimedia, development, and desktop environments
 - CLI tooling including fzf, zoxide, eza, bat, ripgrep, and starship
 - Home Manager integration for user configuration
 - Optional gaming and system performance settings
@@ -76,4 +68,4 @@ See [CONTRIBUTING.md](documentation/CONTRIBUTING.md) for development and contrib
 - [FAQ.md](documentation/FAQ.md) - Frequently asked questions
 - GitHub Issues - Bug reports and questions
 
-This configuration uses [NixOS](https://nixos.org/), [Home Manager](https://github.com/nix-community/home-manager), and [COSMIC Desktop](https://github.com/pop-os/cosmic-epoch).
+This configuration uses [NixOS](https://nixos.org/) and [Home Manager](https://github.com/nix-community/home-manager).

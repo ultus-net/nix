@@ -5,7 +5,6 @@ This directory contains modular NixOS configuration fragments. Each module is op
 ## Core Modules
 
 ### System Configuration
-- **`boot.nix`** - Boot loader and kernel configuration
 - **`networking.nix`** - Network management (NetworkManager)
 - **`security.nix`** - Security hardening and SSH configuration
 - **`audio.nix`** - PipeWire audio stack
@@ -28,10 +27,8 @@ This directory contains modular NixOS configuration fragments. Each module is op
 - **`sysadmin.nix`** - System administration tools (backups, network diagnostics, hardware monitoring)
 
 ### Desktop Environments
-- **`cosmic.nix`** - System76 COSMIC desktop
-- **`gnome.nix`** - GNOME Shell
+- **`hyprland.nix`** - Hyprland Wayland compositor
 - **`kde.nix`** - KDE Plasma 6
-- **`cinnamon.nix`** - Cinnamon (Linux Mint)
 - **`xfce.nix`** - XFCE
 
 ### User Configuration
@@ -207,7 +204,7 @@ machines.wallpapers.rotationInterval = 300;  # seconds (5 minutes)
   - 3D renders (gear, moonscape, recursive, waterfall)
 - System-wide installation accessible to all desktop environments
 - Home Manager integration for automatic wallpaper symlinks
-- Rotation configured via COSMIC, GNOME, KDE, etc.
+- Rotation configured via desktop environments
 
 **Note:** This module is enabled by default in all desktop profiles. The Home Manager configuration ([home/hunter.nix](../home/hunter.nix)) automatically symlinks all wallpapers to `~/.wallpapers` for rotation.
 

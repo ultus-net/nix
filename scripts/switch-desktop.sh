@@ -9,11 +9,9 @@ REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Available desktops
 DESKTOPS=(
-  "cosmic"
-  "gnome"
   "kde"
-  "cinnamon"
   "xfce"
+  "hyprland"
 )
 
 show_usage() {
@@ -24,7 +22,7 @@ show_usage() {
     echo "  - $desktop"
   done
   echo ""
-  echo "Example: $0 gnome"
+  echo "Example: $0 kde"
   exit 1
 }
 

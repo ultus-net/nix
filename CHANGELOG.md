@@ -14,6 +14,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   rename the checkout directory to match before the next auto-upgrade, or point
   `flake` at wherever the checkout lives.
 
+### Removed
+
+- COSMIC, GNOME and Cinnamon support: their `roles/` bundles and `modules/`,
+  the `nixos-cosmic` input, `scripts/export-cosmic.sh` and
+  `documentation/QUICK-INSTALL-COSMIC.md`. KDE, Hyprland and XFCE remain.
+- Flake outputs `cosmicImage`, `kdeImage`, `packages.default` and
+  `homeManagerModules`, plus `modules/boot.nix`.
+- `documentation/QUICK-INSTALL-CALAMARES.md`, which only described the COSMIC
+  graphical install path.
+
 ### Added
 
 - `dev-image` flake output and `containers/dev`: an OCI toolchain image with

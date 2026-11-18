@@ -23,49 +23,23 @@ nix-collect-garbage -d
 
 **Solution:**
 ```bash
-sudo nixos-install --flake /mnt/nix#<desktop>-workstation
+sudo nixos-install --flake /mnt/nix#tower
 ```
 
 ### Flake evaluation fails with "does not provide attribute"
 
-**Problem:** Typo in desktop name or missing profile.
+**Problem:** Typo in the host name.
 
 **Solution:**
 ```bash
 # List available configurations
 nix flake show /mnt/nix
 
-# Common typo: missing "-workstation" suffix
-nixos-install --flake /mnt/nix#cosmic-workstation  # Correct
-nixos-install --flake /mnt/nix#cosmic              # Wrong
+# The attribute is the host name from hosts/<name>/
+nixos-install --flake /mnt/nix#tower
 ```
 
 ## Desktop Environment Issues
-
-### COSMIC: "No display found" or black screen
-
-**Problem:** COSMIC requires Wayland and proper GPU drivers.
-
-**Solution:**
-1. Ensure your GPU is supported
-2. Check if running on NVIDIA (requires additional setup)
-3. Try forcing enabled output in your machine config:
-   ```nix
-   hardware.display.outputs."DP-1".mode = "e";
-   ```
-
-### GNOME: Extensions not loading
-
-**Problem:** GNOME extensions need to be enabled per-user.
-
-**Solution:**
-```bash
-# Install GNOME Extensions app
-nix-shell -p gnome-extensions-cli
-
-# Enable an extension
-gnome-extensions enable <extension-uuid>
-```
 
 ### KDE Plasma: Wayland session not available
 
@@ -223,7 +197,7 @@ home-manager build
    ```
 3. Fix configuration and reinstall:
    ```bash
-   nixos-install --root /mnt --flake /mnt/nix#<desktop>-workstation
+   nixos-install --root /mnt --flake /mnt/nix#tower
    ```
 
 ## Getting More Help

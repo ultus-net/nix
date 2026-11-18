@@ -40,36 +40,31 @@ Desktop-specific configuration lives in `roles/` and their imported modules.
 
 ### Inputs
 - **nixpkgs** - Pinned to a specific commit for reproducibility
+- **nixpkgs-stable** - Stable channel backup
 - **home-manager** - User environment management
-- **nixos-cosmic** - COSMIC desktop environment
-- **flake-utils** - Flake utilities for multi-system support
+- **flake-utils** - Flake utilities
 - **devshell** - Development shell configuration
 
 ### Outputs
 
 #### Per-System Outputs
-Available on all supported systems (x86_64-linux, aarch64-linux, x86_64-darwin, aarch64-darwin):
+Available on all supported systems (x86_64-linux):
 
 - **devShells.default** - Development environment with tools
-- **packages.default** - QoL package bundle
-- **packages.cosmicImage** - Docker image with dev tools
-- **packages.kdeImage** - Docker image for KDE development
-- **homeManagerModules.default** - Home Manager module for QoL
+- **packages.dev-image** - OCI toolchain image for dev containers
 
-#### System-Wide Outputs
-Available at the top level:
-
-- **nixosConfigurations** - All 7 system configurations (6 desktops + 1 headless)
-- **homeConfigurations** - Standalone Home Manager configurations
-- **templates** - Project templates for new configurations
+#### Top-Level Outputs
+- **nixosConfigurations** - All system configurations (base-server, tower, work-laptop)
+- **homeConfigurations."hunter@x86_64-linux"** - Standalone Home Manager configuration
+- **templates.homeManager** - Project template for a Home Manager configuration
 
 ## Module System
 
 ### Module Categories
 
-1. **Desktop Environments** (`modules/*-desktop.nix`)
+1. **Desktop Environments** (`modules/kde.nix`, `modules/hyprland.nix`, `modules/xfce.nix`)
    - Self-contained desktop environment configuration
-   - Examples: `gnome.nix`, `kde.nix`, `cosmic.nix`
+   - Examples: `kde.nix`, `hyprland.nix`, `xfce.nix`
 
 2. **Feature Modules** (`modules/*.nix`)
    - Optional functionality (gaming, development, multimedia)
@@ -77,7 +72,7 @@ Available at the top level:
 
 3. **Core Modules** (`modules/common-*.nix`)
    - Essential functionality (packages, users, security)
-   - Usually imported by profiles
+   - Usually imported by roles
 
 ### Module Design Pattern
 
@@ -116,7 +111,7 @@ Roles compose modules into complete desktop environments:
   imports = [
     ../modules/base.nix  # Base machine config
     ../modules/common-packages.nix # CLI tools
-    ../modules/gnome.nix           # Desktop environment
+    ../modules/kde.nix             # Desktop environment
     ../modules/audio.nix           # Audio support
     ../modules/fonts.nix           # Font configuration
     # ... other modules
@@ -144,7 +139,7 @@ Example:
   imports = [
     ../../modules/base.nix
     ./hardware.nix
-    ../../roles/gnome.nix
+    ../../roles/kde.nix
   ];
 
   networking.hostName = "my-laptop";
@@ -179,24 +174,18 @@ Home Manager is integrated two ways:
 1. **NixOS Module** - Included in system configurations
 2. **Standalone** - For non-NixOS systems
 
-The `homeManagerModules.default` provides a reusable module with:
-- Shell configuration (bash, starship)
-- Git configuration
-- Neovim setup
-- VSCode configuration
-- Development tools
 
 ## CI/CD Pipeline
 
 The GitHub Actions workflow validates:
 
-1. **Basic Validation** - Syntax checks, structure validation
+1. **Basic Validation** - Home Manager import validator, layering gate and its self-test
 2. **Flake Structure** - Metadata and expected outputs
-3. **Build Configurations** - All 7 configurations evaluate correctly
+3. **Build Configurations** - `base-server`, `tower` and `work-laptop` evaluate and build
 4. **Module Validation** - All modules have valid syntax
 5. **Security Checks** - Scan for hardcoded secrets
-6. **Home Manager** - Standalone configurations validate
-7. **VM Boot Tests** - Critical configurations actually boot
+6. **Home Manager** - Standalone configuration validates
+7. **VM Boot Tests** - `base-server` and `xfce-workstation` boot, on a labeled PR
 
 See `.github/CI-CD-GUIDE.md` for complete pipeline documentation.
 
@@ -296,21 +285,13 @@ Includes:
 
 See `USAGE.md` for testing commands.
 
-## Migration from Legacy Structure
-
-Earlier versions kept everything in `hosts/` and split desktop bundles into
-`profiles/`. Machine files now live at `hosts/<name>/default.nix`, desktop
-bundles in `roles/`, and shared defaults in `modules/base.nix`.
-
-Old files are in `hosts-deprecated/` for reference.
-
 ## Contributing
 
 When adding new features:
 
 1. Create focused modules in `modules/`
 2. Document options and usage
-3. Update relevant profiles
+3. Update relevant roles
 4. Add tests to CI pipeline
 5. Update documentation
 
