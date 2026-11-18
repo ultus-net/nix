@@ -31,7 +31,7 @@ let
     nodejs_22
     pnpm
     bun
-    nodePackages_latest.typescript-language-server
+    typescript-language-server
 
     # python
     python3
