@@ -71,7 +71,9 @@ pkgs.dockerTools.buildLayeredImage {
   name = "ghcr.io/ultus-net/nix-dev";
   tag = "latest";
 
-  copyToRoot = pkgs.buildEnv {
+  # A layered image takes `contents`, not `copyToRoot`. buildEnv merges the
+  # packages into the /bin, /etc and /share links the config below refers to.
+  contents = pkgs.buildEnv {
     name = "nix-dev-root";
     paths = tools ++ accounts;
     pathsToLink = [ "/bin" "/etc" "/share" ];
