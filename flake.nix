@@ -123,6 +123,17 @@
           ${pkgs.bash}/bin/bash scripts/check-no-password-hash.sh .
           touch $out
         '';
+
+        # The sandbox proxy decides every egress from an agent session, so its
+        # allowlist matching and its refusal of non-global addresses are
+        # exercised without a network.
+        agent-sandbox-proxy = pkgs.runCommand "check-agent-sandbox-proxy" {
+          nativeBuildInputs = [ pkgs.python3 ];
+        } ''
+          cd ${self}
+          python3 tests/agent-sandbox-proxy.py
+          touch $out
+        '';
       } // import ./tests/hosts.nix { inherit self pkgs; };
     }) // {
       nixosConfigurations = {

@@ -42,8 +42,8 @@ in
     };
 
     systemd.services.nixos-upgrade.preStart = ''
-      git -c safe.directory='*' -C ${lib.escapeShellArg cfg.flakePath} fetch --quiet origin ${lib.escapeShellArg cfg.ref}
-      git -c safe.directory='*' -C ${lib.escapeShellArg cfg.flakePath} merge --ff-only FETCH_HEAD
+      git -c safe.directory=${lib.escapeShellArg cfg.flakePath} -C ${lib.escapeShellArg cfg.flakePath} fetch --quiet origin ${lib.escapeShellArg cfg.ref}
+      git -c safe.directory=${lib.escapeShellArg cfg.flakePath} -C ${lib.escapeShellArg cfg.flakePath} merge --ff-only FETCH_HEAD
     '';
   };
 }

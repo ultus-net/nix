@@ -14,8 +14,10 @@ The rules are deliberately narrow:
   an allowed name, so the proxy cannot be used as an address-forwarder.
 - Only the ports in ``--ports`` are reachable, which keeps SSH and other
   nothing-to-do-with-the-API ports out of reach.
-- The proxy resolves the name itself. The sandbox has no resolver, so DNS
-  tunnelling has no channel.
+- The proxy resolves the name once, refuses every address that is not globally
+  routable and unicast, and dials one of the addresses it kept. A name cannot be
+  pointed at a LAN host, at loopback, at a link-local address, or at a multicast
+  group. The sandbox has no resolver, so DNS tunnelling has no channel.
 """
 
 import argparse
@@ -24,6 +26,7 @@ import ipaddress
 import os
 import re
 import signal
+import socket
 import sys
 
 HOSTNAME = re.compile(r"^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$")
@@ -49,6 +52,8 @@ class Allowlist:
                     self.exact.add(entry)
 
     def allows(self, host: str) -> bool:
+        # A `*.` entry covers the bare name and every subdomain of it. The
+        # match is on label boundaries, so `evilgithub.com` fails.
         if host in self.exact:
             return True
         for suffix in self.suffixes:
@@ -63,6 +68,60 @@ def is_ip_literal(host: str) -> bool:
     except ValueError:
         return False
     return True
+
+
+def is_usable(address: str) -> bool:
+    """True when a resolved address is globally routable and unicast."""
+    try:
+        parsed = ipaddress.ip_address(address)
+    except ValueError:
+        return False
+    # `is_global` reports multicast addresses as global, and a CONNECT must
+    # never reach one.
+    return parsed.is_global and not parsed.is_multicast
+
+
+def global_addresses(infos, host: str):
+    """Drop resolved addresses a session may not be connected to."""
+    addresses = []
+    for family, _type, _proto, _name, sockaddr in infos:
+        if not is_usable(sockaddr[0]):
+            log(f"refuse unusable address {sockaddr[0]} for {host}")
+            continue
+        addresses.append((family, sockaddr))
+    return addresses
+
+
+async def dial(family: int, sockaddr):
+    """Connect to one resolved address without asking the resolver again."""
+    loop = asyncio.get_running_loop()
+    sock = socket.socket(family, socket.SOCK_STREAM)
+    sock.setblocking(False)
+    try:
+        await loop.sock_connect(sock, sockaddr)
+    except OSError:
+        sock.close()
+        raise
+    return await asyncio.open_connection(sock=sock)
+
+
+async def connect_upstream(host: str, port: int):
+    """Resolve once, keep the usable addresses, and dial one of them."""
+    loop = asyncio.get_running_loop()
+    infos = await asyncio.wait_for(
+        loop.getaddrinfo(host, port, type=socket.SOCK_STREAM), timeout=15
+    )
+    candidates = global_addresses(infos, host)
+    if not candidates:
+        raise OSError(f"no globally routable address for {host}")
+
+    last_error = OSError(f"cannot connect to {host}")
+    for family, sockaddr in candidates:
+        try:
+            return await asyncio.wait_for(dial(family, sockaddr), timeout=15)
+        except OSError as error:
+            last_error = error
+    raise last_error
 
 
 async def relay(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
@@ -116,9 +175,7 @@ def make_handler(allow: Allowlist, ports: set[int]):
                 line = await asyncio.wait_for(reader.readline(), timeout=10)
                 if line in (b"\r\n", b"\n", b""):
                     break
-            upstream_reader, upstream_writer = await asyncio.wait_for(
-                asyncio.open_connection(host, port), timeout=15
-            )
+            upstream_reader, upstream_writer = await connect_upstream(host, port)
             log(f"allow {peer}")
             writer.write(b"HTTP/1.1 200 Connection Established\r\n\r\n")
             await writer.drain()
