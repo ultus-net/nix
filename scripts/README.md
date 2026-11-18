@@ -117,7 +117,7 @@ Verify that all performance optimizations are active and working correctly.
 - zram compression swap status
 - I/O scheduler configuration (kyber/mq-deadline)
 - TCP BBR congestion control
-- Kernel boot parameters (mitigations, ntsync, C-states)
+- Kernel boot parameters (C-states, hugepages, watchdog)
 - Memory tuning (swappiness, VFS cache pressure)
 - tmpfs configuration
 - Gamemode service status

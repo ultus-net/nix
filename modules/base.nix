@@ -86,36 +86,23 @@
   # Provide a sensible default hostname that machines should override.
   networking.hostName = lib.mkDefault "nixos-host";
 
-  # Allow user-space debuggers (PINCE/GDB) to attach to arbitrary processes
-  # without requiring sudo. Set ptrace_scope=0 persistently.
-  boot.kernel.sysctl."kernel.yama.ptrace_scope" = 0;
+  # Allow user-space debuggers (PINCE/GDB) to attach only to their own
+  # processes by default. A host that needs system-wide attach opts in.
+  boot.kernel.sysctl."kernel.yama.ptrace_scope" = lib.mkDefault 1;
 
   # Enable Flatpak support system-wide (includes runtime and portal services).
   # To add Flathub: flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
   services.flatpak.enable = true;
   
-  # Grant Flatpak apps filesystem access to additional directories
-  # This allows Steam (and other gaming apps) to access game libraries on multiple drives
+  # Grant Flatpak apps access to removable media. Gaming-specific paths and
+  # Steam overrides live in modules/gaming.nix, so a non-gaming host does not
+  # inherit them.
   system.activationScripts.flatpakOverrides = lib.mkIf config.services.flatpak.enable ''
     mkdir -p /var/lib/flatpak/overrides
     
-    # Global override: grant all Flatpaks access to /games and other common game locations
     cat > /var/lib/flatpak/overrides/global << EOF
 [Context]
-filesystems=/games:rw;/mnt:rw;/run/media:rw;
-EOF
-    
-    # Steam-specific overrides for comprehensive drive access and NVIDIA GPU support
-    # Note: Do NOT add 'home' as it conflicts with Steam's static permissions
-    cat > /var/lib/flatpak/overrides/com.valvesoftware.Steam << EOF
-[Context]
-filesystems=xdg-data/applications:create;xdg-data/icons:create;/games:rw;/mnt:rw;/run/media:rw;xdg-music;xdg-pictures;xdg-videos;
-devices=all;
-
-[Environment]
-__NV_PRIME_RENDER_OFFLOAD=1
-__GLX_VENDOR_LIBRARY_NAME=nvidia
-__VK_LAYER_NV_optimus=NVIDIA_only
+filesystems=/mnt:rw;/run/media:rw;
 EOF
   '';
   

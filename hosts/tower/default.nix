@@ -115,6 +115,7 @@
   gaming.enable = true;
   gaming.enableSteam = true;  # Use native Steam via NixOS module
   gaming.optimizeSteamIO = true;  # Enable I/O optimizations for Steam cloud sync
+  gaming.kernelTuning = true;    # Gaming kernel/network tuning, opt-in
   multimedia.enable = true;
   virtualization.enable = true;
   machines.containers.enable = true;
@@ -207,95 +208,18 @@
     priority = 100;           # Higher priority than disk swap
   };
 
-  # CPU frequency governor for maximum performance
-  powerManagement.cpuFreqGovernor = "performance";
-
-  # Gaming & low-latency kernel optimizations
+  # Hardware-specific kernel parameters. Gaming tuning (watchdog, THP,
+  # C-states, I/O scheduler, BBR and the vm/net sysctls) lives in
+  # modules/gaming.nix behind gaming.kernelTuning.
   boot.kernelParams = [
-    # WARNING: Disabling CPU mitigations improves performance by ~5-10% but
-    # exposes the system to Spectre/Meltdown attacks. Only use on isolated
-    # gaming desktops that don't run untrusted code. For security, use:
-    # "mitigations=auto"
-    "mitigations=off"
-    
-    # Disable kernel watchdog (slight performance improvement)
-    "nowatchdog"
-    
-    # Transparent Hugepages for better memory performance
-    "transparent_hugepage=always"
-    
-    # AMD Zen 4 specific optimizations
-    "amd_pstate=active"  # Use AMD P-State EPP driver for better power/perf
-    "amd_prefcore=enable"  # Enable preferred core ranking (boost best cores)
-    
-    # Reduce C-state latency for gaming (Zen 4 specific)
-    "processor.max_cstate=2"  # Balance between performance and power
-    
-    # TSC clocksource for lower latency (Ryzen 7600 has stable TSC)
-    "tsc=reliable"
-    "clocksource=tsc"
-    
-    # Memory performance - Zen 4 has excellent memory controller
+    "amd_pstate=active"    # AMD P-State EPP driver for power/perf
+    "amd_prefcore=enable"  # Preferred core ranking
     "amd_iommu=on"
-    "iommu=pt"  # Pass-through mode for better performance with VMs
+    "iommu=pt"             # Pass-through mode for VMs
   ];
 
-  # I/O scheduler optimization for gaming workloads
-  # Use kyber if available (best for high-performance NVMe), otherwise use none
-  services.udev.extraRules = ''
-    # Enable USB device wakeup for all devices that support it
-    ACTION=="add", SUBSYSTEM=="usb", TEST=="power/wakeup", ATTR{power/wakeup}="enabled"
-    
-    # Set I/O scheduler for NVMe drives - try kyber first, fall back to none
-    ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", TEST=="queue/scheduler", ATTR{queue/scheduler}="none"
-  '';
-
-  # TCP BBR congestion control for faster networking
-  boot.kernel.sysctl = {
-    "net.core.default_qdisc" = "fq";
-    "net.ipv4.tcp_congestion_control" = "bbr";
-    
-    # Desktop responsiveness tuning
-    "vm.swappiness" = 10; # Reduce swap usage (we have plenty of RAM)
-    "vm.vfs_cache_pressure" = 50; # Keep more filesystem cache
-    
-    # Gaming optimizations
-    "vm.dirty_ratio" = 10; # Write to disk sooner (better for gaming)
-    "vm.dirty_background_ratio" = 5;
-    
-    # Better memory management for 30GB RAM system
-    "vm.min_free_kbytes" = 262144;  # Keep 256MB free (good for high RAM)
-    "vm.dirty_expire_centisecs" = 3000;  # 30 seconds
-    "vm.dirty_writeback_centisecs" = 1500;  # 15 seconds
-    
-    # Network performance
-    "net.core.netdev_max_backlog" = 16384;
-    "net.core.somaxconn" = 8192;
-    "net.ipv4.tcp_fastopen" = 3;
-    "net.ipv4.tcp_mtu_probing" = 1;
-    
-    # Gaming-specific network tuning
-    "net.ipv4.tcp_window_scaling" = 1;
-    "net.ipv4.tcp_timestamps" = 1;
-    "net.ipv4.tcp_sack" = 1;
-    "net.core.rmem_max" = 134217728;  # 128MB receive buffer
-    "net.core.wmem_max" = 134217728;  # 128MB send buffer
-    "net.ipv4.tcp_rmem" = "4096 87380 67108864";  # TCP read buffer
-    "net.ipv4.tcp_wmem" = "4096 65536 67108864";  # TCP write buffer
-    
-    # Reduce swap tendency (with 30GB RAM, rarely need swap)
-    "vm.watermark_scale_factor" = 200;  # Scale down memory reclaim
-    
-    # Better for NVMe drives
-    "vm.page-cluster" = 0;  # Disable read-ahead clustering (NVMe is fast enough)
-    
-    # Audio/Video streaming optimizations
-    "net.core.optmem_max" = 65536;
-    
-    # Better multi-core scheduling (Ryzen 5 7600 has 6 cores)
-    "kernel.sched_migration_cost_ns" = 5000000;  # 5ms
-    "kernel.sched_autogroup_enabled" = 0;  # Disable for better gaming perf
-  };
+  # PINCE is enabled on this host, so system-wide ptrace attach stays available.
+  boot.kernel.sysctl."kernel.yama.ptrace_scope" = 0;
 
   # Filesystem optimizations for SSDs
   # These options are merged with hardware.nix

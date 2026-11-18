@@ -19,10 +19,16 @@ The tower configuration includes comprehensive performance tuning targeting:
 **Location**: `hosts/tower/default.nix`
 
 ```nix
-machines.zram.enableAutoSize = true;
-machines.zram.maxSize = 8589934592; # 8GB
-machines.zram.compAlgorithm = "zstd";
+zramSwap = {
+  enable = true;
+  algorithm = "zstd";
+  memoryPercent = 50;
+  priority = 100;
+};
 ```
+
+Hosts that do not set `zramSwap` get the `machines.zram.*` service from
+`modules/zram.nix`, which auto-sizes to half of RAM.
 
 **Benefits**:
 - 3-5x compression ratio reduces actual RAM pressure
@@ -37,14 +43,15 @@ swapon --show  # Check priority (zram should be higher)
 ```
 
 #### Reduced Swapfile Size
-Swapfile reduced from 32GB to 16GB since zram handles primary swapping.
+The tower swapfile is 4GB, used as emergency overflow, because zram handles
+primary swapping.
 
 **Considerations**: If you need hibernation, consider keeping swapfile >= RAM size (30GB).
 
 ### 2. CPU & Process Management
 
 #### Performance CPU Governor
-**Location**: `hosts/tower/default.nix`
+**Location**: `modules/gaming.nix`, enabled by `gaming.kernelTuning`
 
 ```nix
 powerManagement.cpuFreqGovernor = "performance";
@@ -98,36 +105,28 @@ gamemoded -s
 ### 3. Kernel Optimizations
 
 #### Low-Latency Kernel Parameters
-**Location**: `hosts/tower/default.nix`
+**Location**: `modules/gaming.nix`, enabled by `gaming.kernelTuning = true` in `hosts/tower/default.nix`
 
 ```nix
 boot.kernelParams = [
-  "mitigations=off"           # Disable CPU vulnerability mitigations
-  "processor.max_cstate=1"    # Reduce CPU sleep state latency
+  "processor.max_cstate=2"    # Reduce CPU sleep state latency
   "nowatchdog"                # Disable kernel watchdog
-  "tsc=reliable"              # Use TSC as clocksource
-  "clocksource=tsc"           
   "transparent_hugepage=always"
-  "ntsync.enable=1"           # Wine/Proton futex2 support
 ];
 ```
 
-**Performance Gains**:
-- `mitigations=off`: 5-10% CPU performance improvement
-- `max_cstate=1`: Lower latency, faster wake from idle
-- `ntsync`: 10-20% Wine/Proton performance boost
-
-**Security Considerations**: 
-`mitigations=off` disables Spectre/Meltdown protections. Acceptable for gaming desktop, but DO NOT use on servers or multi-tenant systems.
+CPU mitigations stay on for every host. `mitigations=off` and the fixed TSC
+clocksource were removed: they trade security or portability for a few percent,
+and this host runs agents.
 
 **Verification**:
 ```bash
-cat /proc/cmdline | grep mitigations
+cat /proc/cmdline
 cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 ```
 
 #### System Tuning (sysctl)
-**Location**: `hosts/tower/default.nix`
+**Location**: `modules/gaming.nix`, enabled by `gaming.kernelTuning`
 
 ```nix
 boot.kernel.sysctl = {
@@ -147,25 +146,17 @@ boot.kernel.sysctl = {
 
 ### 4. Storage & I/O Optimization
 
-#### NVMe Kyber Scheduler
-**Location**: `hosts/tower/default.nix` (udev rules)
+#### NVMe I/O Scheduler
+**Location**: `modules/gaming.nix` (udev rules), enabled by `gaming.kernelTuning`
 
 ```bash
-# NVMe drives use kyber (best for gaming/random I/O)
-ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="kyber"
-
-# SATA SSDs use mq-deadline (better for sequential, QLC NAND)
-ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/scheduler}="mq-deadline"
+# NVMe drives use none, and the Steam I/O service uses mq-deadline elsewhere
+ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="none"
 ```
-
-**Benefits**:
-- Kyber: Lower latency for gaming workloads on NVMe
-- MQ-deadline: Better for QLC SATA SSDs (Samsung 870 QVO)
 
 **Verification**:
 ```bash
-cat /sys/block/nvme0n1/queue/scheduler  # Should show [kyber]
-cat /sys/block/sda/queue/scheduler      # Should show [mq-deadline]
+cat /sys/block/nvme0n1/queue/scheduler  # Should show [none]
 ```
 
 #### SSD-Optimized Mount Options
@@ -173,13 +164,13 @@ cat /sys/block/sda/queue/scheduler      # Should show [mq-deadline]
 
 All filesystems now use:
 ```nix
-options = [ "noatime" "nodiratime" "discard=async" "commit=60" ];
+options = [ "noatime" "nodiratime" "discard" "commit=60" ];
 ```
 
 **Benefits**:
 - `noatime`: No access time updates (reduces writes)
 - `nodiratime`: No directory access time updates
-- `discard=async`: Async TRIM for better performance
+- `discard`: Continuous TRIM (`services.fstrim` also runs weekly)
 - `commit=60`: Batch writes every 60s (reduces SSD wear)
 
 **SSD Lifespan Impact**: Can extend SSD life by 20-30% by reducing write amplification.
@@ -250,7 +241,7 @@ SDL_VIDEODRIVER = "wayland";
 ### 7. Network Performance
 
 #### TCP BBR Congestion Control
-**Location**: `hosts/tower/default.nix`
+**Location**: `modules/gaming.nix`, enabled by `gaming.kernelTuning`
 
 ```nix
 boot.kernel.sysctl = {
@@ -330,7 +321,7 @@ echo -e "\n=== TCP Congestion Control ==="
 sysctl net.ipv4.tcp_congestion_control
 
 echo -e "\n=== Kernel Parameters ==="
-cat /proc/cmdline | grep -o 'mitigations=\w*'
+cat /proc/cmdline
 cat /proc/cmdline | grep -o 'ntsync.enable=\w*'
 
 echo -e "\n=== Memory Stats ==="
@@ -352,19 +343,11 @@ Save as `scripts/verify-performance.sh` and run after each rebuild.
 
 If you need to revert specific optimizations:
 
-### Conservative Mode (Keep Security Mitigations)
+### Conservative Mode
 
-Remove from `hosts/tower/default.nix`:
-```nix
-# Comment out or remove:
-# "mitigations=off"
-# "processor.max_cstate=1"
-```
-
-Change CPU governor:
-```nix
-powerManagement.cpuFreqGovernor = "schedutil";  # Balanced
-```
+CPU mitigations are on for every host; there is no security trade to undo. To
+drop the latency tuning instead, set `gaming.kernelTuning = false` in
+`hosts/tower/default.nix`. The governor then comes from the NixOS default.
 
 ### Power Saving Mode
 

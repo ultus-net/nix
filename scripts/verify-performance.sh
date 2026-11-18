@@ -63,21 +63,21 @@ echo -e "\n=== Kernel Parameters ==="
 CMDLINE=$(cat /proc/cmdline)
 
 if echo "$CMDLINE" | grep -q "mitigations=off"; then
-  echo "[OK] mitigations=off (performance mode)"
+  echo "[WARN] mitigations=off present (security trade)"
 else
-  echo "[FAIL] mitigations=off NOT found"
+  echo "[OK] CPU mitigations enabled"
 fi
 
-if echo "$CMDLINE" | grep -q "ntsync.enable=1"; then
-  echo "[OK] ntsync.enable=1 (Wine/Proton optimization)"
+if echo "$CMDLINE" | grep -q "nowatchdog"; then
+  echo "[OK] nowatchdog (performance mode)"
 else
-  echo "[FAIL] ntsync.enable=1 NOT found"
+  echo "[FAIL] nowatchdog NOT found"
 fi
 
-if echo "$CMDLINE" | grep -q "processor.max_cstate=1"; then
-  echo "[OK] processor.max_cstate=1 (low latency)"
+if echo "$CMDLINE" | grep -q "processor.max_cstate=2"; then
+  echo "[OK] processor.max_cstate=2 (low latency)"
 else
-  echo "[FAIL] processor.max_cstate=1 NOT found"
+  echo "[FAIL] processor.max_cstate=2 NOT found"
 fi
 
 echo -e "\n=== Memory & Swap ==="

@@ -107,7 +107,11 @@ Gaming compatibility layers and performance tools.
 ```nix
 imports = [ ../modules/gaming.nix ];
 gaming.enable = true;
+gaming.kernelTuning = true;  # opt-in kernel, network and flatpak tuning
 ```
+
+`gaming.kernelTuning` never disables CPU mitigations. Shared defaults stay
+secure, and the tuning only applies on the host that opts in.
 
 ### Development (`development.nix`)
 Development tools and language runtimes.

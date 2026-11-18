@@ -19,7 +19,7 @@ This directory contains modular NixOS configuration fragments. Each module is op
 - **`development.nix`** - Development tools and language runtimes
 
 ### Optional Feature Modules
-- **`gaming.nix`** - Gaming tools (Steam, Lutris, MangoHUD, etc.)
+- **`gaming.nix`** - Gaming tools plus opt-in kernel/network tuning (`gaming.kernelTuning`)
 - **`virtualization.nix`** - VM support (libvirt, QEMU, virt-manager)
 - **`laptop.nix`** - Laptop-specific settings (power management, TLP)
 - **`multimedia.nix`** - Media tools (VLC, GIMP, ffmpeg, OBS)
