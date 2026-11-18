@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# deploy-config.sh - Sync local nixos-base repository to /etc/nixos
+# deploy-config.sh - Sync local nix repository to /etc/nixos
 
 # Colors for output
 RED='\033[0;31m'
@@ -18,7 +18,7 @@ else
 fi
 
 # Default source path
-SOURCE="${REAL_HOME}/Documents/nixos-base"
+SOURCE="${REAL_HOME}/Documents/nix"
 TARGET="/etc/nixos"
 
 echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"

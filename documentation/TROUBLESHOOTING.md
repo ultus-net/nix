@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-Common issues and solutions when using nixos-base.
+Common issues and solutions when using nix.
 
 ## Installation Issues
 
@@ -23,49 +23,23 @@ nix-collect-garbage -d
 
 **Solution:**
 ```bash
-sudo nixos-install --flake /mnt/nixos-base#<desktop>-workstation
+sudo nixos-install --flake /mnt/nix#tower
 ```
 
 ### Flake evaluation fails with "does not provide attribute"
 
-**Problem:** Typo in desktop name or missing profile.
+**Problem:** Typo in the host name.
 
 **Solution:**
 ```bash
 # List available configurations
-nix flake show /mnt/nixos-base
+nix flake show /mnt/nix
 
-# Common typo: missing "-workstation" suffix
-nixos-install --flake /mnt/nixos-base#cosmic-workstation  # Correct
-nixos-install --flake /mnt/nixos-base#cosmic              # Wrong
+# The attribute is the host name from hosts/<name>/
+nixos-install --flake /mnt/nix#tower
 ```
 
 ## Desktop Environment Issues
-
-### COSMIC: "No display found" or black screen
-
-**Problem:** COSMIC requires Wayland and proper GPU drivers.
-
-**Solution:**
-1. Ensure your GPU is supported
-2. Check if running on NVIDIA (requires additional setup)
-3. Try forcing enabled output in your machine config:
-   ```nix
-   hardware.display.outputs."DP-1".mode = "e";
-   ```
-
-### GNOME: Extensions not loading
-
-**Problem:** GNOME extensions need to be enabled per-user.
-
-**Solution:**
-```bash
-# Install GNOME Extensions app
-nix-shell -p gnome-extensions-cli
-
-# Enable an extension
-gnome-extensions enable <extension-uuid>
-```
 
 ### KDE Plasma: Wayland session not available
 
@@ -113,7 +87,7 @@ nmtui
 **Problem:** SSH not enabled or firewall blocking.
 
 **Solution:**
-In `machines/configuration.nix`, SSH is enabled by default but verify:
+In `modules/base.nix`, SSH is enabled by default but verify:
 ```nix
 services.openssh.enable = true;
 networking.firewall.allowedTCPPorts = [ 22 ];
@@ -223,7 +197,7 @@ home-manager build
    ```
 3. Fix configuration and reinstall:
    ```bash
-   nixos-install --root /mnt --flake /mnt/nixos-base#<desktop>-workstation
+   nixos-install --root /mnt --flake /mnt/nix#tower
    ```
 
 ## Getting More Help
@@ -231,7 +205,7 @@ home-manager build
 1. Check NixOS manual: https://nixos.org/manual/nixos/stable/
 2. Search NixOS Discourse: https://discourse.nixos.org/
 3. NixOS Wiki: https://nixos.wiki/
-4. Open an issue: https://github.com/ultus-net/nixos-base/issues
+4. Open an issue: https://github.com/ultus-net/nix/issues
 
 ## Debugging Commands
 

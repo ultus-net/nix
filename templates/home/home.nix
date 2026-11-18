@@ -1,9 +1,7 @@
 { config, pkgs, lib, ... }:
 {
-  # Enable our COSMIC developer QoL (standalone Home Manager example)
-  # Note: On NixOS, Home Manager is already integrated via modules/home-manager.nix
-  cosmicDev.enable = true;
-
+  # Standalone Home Manager example. On NixOS, Home Manager is integrated by
+  # modules/home-manager.nix, so a host does not import this file.
   home.username = "csh"; # change if needed
   home.homeDirectory = "/home/csh"; # NixOS default path
 

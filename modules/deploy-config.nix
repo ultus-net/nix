@@ -20,7 +20,7 @@ let
         REAL_HOME="$HOME"
     fi
 
-    SOURCE="''${REAL_HOME}/Documents/nixos-base"
+    SOURCE="''${REAL_HOME}/Documents/nix"
     TARGET="/etc/nixos"
 
     echo -e "''${BLUE}═══════════════════════════════════════════════════════''${NC}"
@@ -107,7 +107,7 @@ in {
     
     environment.shellAliases = {
       deploy-cfg = "deploy-config";
-      nixos-edit = "cd ~/Documents/nixos-base && $EDITOR .";
+      nixos-edit = "cd ~/Documents/nix && $EDITOR .";
     };
   };
 }

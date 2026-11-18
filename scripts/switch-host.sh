@@ -4,16 +4,15 @@ set -euo pipefail
 # Helper to build or switch to a named host from a flake.
 # Usage:
 #   ./scripts/switch-host.sh [<flake-ref>]
-# If no <flake-ref> is provided the script defaults to the top-level
-# `cosmic-workstation` configuration (i.e. .#cosmic-workstation).
+# If no <flake-ref> is provided the script defaults to `.#tower`.
 # Examples:
-#   ./scripts/switch-host.sh          # builds/switches to .#cosmic-workstation
-#   ./scripts/switch-host.sh .#cosmic-workstation
-#   ./scripts/switch-host.sh ./flakes/gnome#gnome-workstation
+#   ./scripts/switch-host.sh          # builds/switches to .#tower
+#   ./scripts/switch-host.sh .#tower
+#   ./scripts/switch-host.sh .#work-laptop
 
-REF=".#cosmic-workstation"
+REF=".#tower"
 if [ "$#" -gt 1 ]; then
-  echo "Usage: $0 [<flake-ref>]  (e.g. .#cosmic-workstation or ./flakes/gnome#gnome-workstation)"
+  echo "Usage: $0 [<flake-ref>]  (e.g. .#tower or .#work-laptop)"
   exit 2
 fi
 

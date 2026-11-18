@@ -6,6 +6,82 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Repository renamed from `nixos-base` to `nix`: GitHub URL, ghcr image
+  (`ghcr.io/ultus-net/nix-dev`), clone paths in docs, and the `system.autoUpgrade`
+  flake path, which is now `/home/hunter/Documents/nix`. **Action on each host:**
+  rename the checkout directory to match before the next auto-upgrade, or point
+  `flake` at wherever the checkout lives.
+- Layering runs host -> role -> module. `machines/` became `hosts/`,
+  `profiles/` became `roles/`, and shared defaults moved to `modules/base.nix`.
+  `scripts/check-layering.py` fails CI if a role or module imports `hosts/`.
+- Hosts declare `users.users` directly. `modules/common-users.nix` and its
+  untyped `machines.users` option are gone. PINCE is a tower-only opt-in.
+- Gaming tuning is opt-in per host through `gaming.kernelTuning`. CPU
+  mitigations stay on for every host: `mitigations=off`, `tsc=reliable` and
+  `clocksource=tsc` are removed. `kernel.yama.ptrace_scope` defaults to 1.
+- Flake outputs are only `nixosConfigurations`, per-system `devShells` and
+  `packages.dev-image`, `homeConfigurations`, `templates`, `formatter` and
+  `checks`. The `<desktop>-workstation` outputs are removed, so a desktop is a
+  role a host imports. `scripts/switch-desktop.sh <desktop> [host]` rewrites
+  that import and rebuilds the host.
+- Inputs are `nixpkgs` and `home-manager` only. `nixpkgs-stable`,
+  `flake-utils` and `devshell` are gone, and `flake.lock` is refreshed to
+  nixpkgs 2026-11-16.
+- CI proves behaviour: branch-name check, `nix flake check` (layering,
+  password gate, one `nixosTest` per host) and a toplevel build per host. The
+  syntax-only jobs and the QEMU serial scraper are deleted.
+
+### Removed
+
+- COSMIC, GNOME and Cinnamon support: their `roles/` bundles and `modules/`,
+  the `nixos-cosmic` input, `scripts/export-cosmic.sh` and
+  `documentation/QUICK-INSTALL-COSMIC.md`. KDE, Hyprland and XFCE remain.
+- Flake outputs `cosmicImage`, `kdeImage`, `packages.default` and
+  `homeManagerModules`, plus `modules/boot.nix`.
+- `documentation/QUICK-INSTALL-CALAMARES.md`, which only described the COSMIC
+  graphical install path.
+
+### Added
+
+- `dev-image` flake output and `containers/dev`: an OCI toolchain image with
+  Node, Python, Go, and agent CLIs, built from the flake's nixpkgs. CI publishes
+  it to `ghcr.io/ultus-net/nix-dev`.
+- `modules/auto-upgrade.nix`: `machines.autoUpgrade` fast-forwards the checkout
+  to `origin/main`, then rebuilds from the pinned lock. It is the only updater.
+- `lib/forAllSystems.nix` and a `nixfmt-rfc-style` formatter output.
+- `checks.<system>.<host>`: a `nixosTest` per host that boots the real host
+  module in QEMU.
+- `modules/agent-sandbox.nix`, enabled on `tower` and `work-laptop`
+  (`machines.agentSandbox`): an `agent-sandbox` launcher for a transient
+  `systemd-nspawn` session, and an allowlisting `CONNECT` proxy in front of its
+  only egress. `documentation/AGENT-SANDBOX.md` states what it isolates and what
+  it does not.
+
+### Fixed
+
+- `pince` comes from nixpkgs. The in-tree package pinned `v0.4.4`, a tag
+  upstream has since dropped, so `nix build .#nixosConfigurations.tower`
+  failed on a 404. The 260-line local patch set is deleted with it.
+- The password-hash gate searched for its own needle and matched the option
+  name in comments and in `flake.nix`. The needle is now assembled at runtime
+  in `scripts/check-no-password-hash.sh`, and the search skips hidden
+  directories.
+
+### Security
+
+- No password hash is committed for a real host. The account starts locked and
+  the first password is set on the console after the first switch. CI fails if
+  `initialHashedPassword` appears outside `hosts/example/`.
+- An agent session cannot reach the internet directly: it has no network
+  interface except loopback, and its one route out is a unix socket to a proxy
+  that accepts `CONNECT` on port 443 for allowlisted names only. A literal IP is
+  refused and there is no resolver inside the session.
+- An agent session cannot use the Nix daemon, so it cannot build a
+  fixed-output derivation whose builder would run on the host network. The store
+  is mounted read-only and the daemon socket is not mounted.
+
 ### Added - Performance Optimizations (January 2026)
 
 #### System-Level Improvements

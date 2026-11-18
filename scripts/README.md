@@ -5,7 +5,7 @@ Helper scripts for managing your NixOS system.
 ## Available Scripts
 
 ### `deploy-config.sh`
-Sync your local nixos-base repository to `/etc/nixos` (the system location).
+Sync your local nix repository to `/etc/nixos` (the system location).
 
 **Usage:**
 ```bash
@@ -18,7 +18,7 @@ deploy-cfg
 1. Shows a preview of changes (dry-run)
 2. Asks for confirmation
 3. Creates a timestamped backup of `/etc/nixos`
-4. Syncs `~/Documents/nixos-base/` → `/etc/nixos/`
+4. Syncs `~/Documents/nix/` → `/etc/nixos/`
 5. Shows next steps for rebuilding
 
 **After deployment:**
@@ -29,30 +29,51 @@ sudo nixos-rebuild switch --flake /etc/nixos#tower
 This script is automatically available system-wide after rebuilding.
 
 ### `switch-desktop.sh`
-Switch between desktop environments without manual configuration editing.
+Point a host at a different desktop role and rebuild that host. It shows the
+diff, asks for confirmation, and rewrites the host's role import.
 
 **Usage:**
 ```bash
-./scripts/switch-desktop.sh <desktop-name>
+./scripts/switch-desktop.sh <desktop> [host]
 ```
 
 **Example:**
 ```bash
-# Switch from GNOME to KDE
-./scripts/switch-desktop.sh kde
-
-# Switch to COSMIC
-./scripts/switch-desktop.sh cosmic
+# Switch tower from KDE to Hyprland
+./scripts/switch-desktop.sh hyprland tower
 ```
 
-**Available desktops:** cosmic, gnome, kde, cinnamon, xfce
+**Available desktops:** kde, xfce, hyprland. The host defaults to
+`hostname -s`, so `./scripts/switch-desktop.sh hyprland` works on the machine
+it targets.
 
 ### `switch-host.sh`
-Switch the hostname of your system.
+Build or switch to a host from the flake. Defaults to `.#tower`.
 
 **Usage:**
 ```bash
-./scripts/switch-host.sh <new-hostname>
+./scripts/switch-host.sh [<flake-ref>]
+```
+
+### `check-layering.py`
+Fail when a role or shared module imports a path under `hosts/`. Layering runs
+host -> role -> module, so that import inverts it. CI runs the gate and its
+`--self-test`.
+
+**Usage:**
+```bash
+python3 ./scripts/check-layering.py
+python3 ./scripts/check-layering.py --self-test
+```
+
+### `check-no-password-hash.sh`
+Fail when a committed password hash appears outside `hosts/example/`. The needle
+is assembled at runtime, so the script does not match itself. CI runs it as
+`checks.<system>.no-initial-password`.
+
+**Usage:**
+```bash
+./scripts/check-no-password-hash.sh .
 ```
 
 ### `collect-system-info.sh`
@@ -109,7 +130,7 @@ Verify that all performance optimizations are active and working correctly.
 - zram compression swap status
 - I/O scheduler configuration (kyber/mq-deadline)
 - TCP BBR congestion control
-- Kernel boot parameters (mitigations, ntsync, C-states)
+- Kernel boot parameters (C-states, hugepages, watchdog)
 - Memory tuning (swappiness, VFS cache pressure)
 - tmpfs configuration
 - Gamemode service status
@@ -164,26 +185,3 @@ nixos-install
 - Run from repository root for best results
 - Most scripts require sudo/root privileges
 - Check script comments for detailed usage information
-
-## Exporting COSMIC Settings (quick)
-
-You can export your current COSMIC/GShell settings for inspection or to
-make them reproducible. The repository's `exports/` directory is gitignored
-by default — store temporary archives there.
-
-Example (run in a terminal on your desktop session):
-
-```bash
-TS=$(date +%Y%m%d-%H%M%S)
-DEST="$HOME/exports/cosmic-settings-$TS"
-mkdir -p "$DEST"
-dconf dump / > "$DEST/dconf_dump_root.dconf" || true
-gsettings list-recursively > "$DEST/gsettings_all_list_recursively.txt" || true
-cp -r "$HOME/.config/gtk-4.0/cosmic" "$DEST/" 2>/dev/null || true
-cp -r "$HOME/.config/cosmic" "$DEST/" 2>/dev/null || true
-cp -r "$HOME/.config/monitors.xml" "$DEST/.config/" 2>/dev/null || true
-tar -C "$HOME" -czf "$HOME/exports/cosmic-settings-$TS.tar.gz" "exports/cosmic-settings-$TS"
-```
-
-Tip: Use the generated dumps to map settings into your `home/*` Nix configs
-or to create a `dconf` preload for exact reproduction.

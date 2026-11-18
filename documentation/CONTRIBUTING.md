@@ -1,4 +1,4 @@
-# Contributing to nixos-base
+# Contributing to nix
 
 Thank you for your interest in improving this NixOS starter repository!
 
@@ -35,12 +35,12 @@ To add a new desktop environment to this repository:
    }
    ```
 
-2. **Create a profile** in `profiles/<desktop>.nix`:
+2. **Create a role** in `roles/<desktop>.nix`:
    ```nix
    { config, pkgs, lib, inputs, ... }:
    {
      imports = [
-       ../machines/configuration.nix
+       ../modules/base.nix
        ../modules/common-packages.nix
        ../modules/<desktop>.nix
        ../modules/home-manager.nix
@@ -61,23 +61,23 @@ To add a new desktop environment to this repository:
    }
    ```
 
-3. **Add to flake.nix**:
+3. **Import the role in a host**:
    ```nix
-   nixosConfigurations = {
-     # ... existing configs
-     <desktop>-workstation = mkSystem ./profiles/<desktop>.nix;
-   };
+   # hosts/<host>/default.nix
+   imports = [
+     ../../roles/<desktop>.nix
+   ];
    ```
 
 4. **Update documentation**:
    - Add entry to `README.md` desktop table
-   - Add section to `profiles/README.md`
+   - Add section to `roles/README.md`
    - Update CI workflow in `.github/workflows/flake-check.yml`
 
 5. **Test your changes**:
    ```bash
    nix flake check
-   nix build .#nixosConfigurations.<desktop>-workstation.config.system.build.toplevel
+   nix build .#nixosConfigurations.<host>.config.system.build.toplevel
    ```
 
 ### Code Style

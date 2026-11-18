@@ -100,7 +100,7 @@ in {
     # Helpful aliases for config management
     environment.shellAliases = {
       deploy-cfg = "deploy-config";  # Shorter alias
-      nixos-edit = "cd ~/Documents/nixos-base && $EDITOR .";  # Quick edit
+      nixos-edit = "cd ~/Documents/nix && $EDITOR .";  # Quick edit
     };
   };
 }

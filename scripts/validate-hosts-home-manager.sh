@@ -1,63 +1,41 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Validate that each profile under `profiles/` and each machine under
-# `machines/` imports the Home Manager module at `../modules/home-manager.nix`
-# (or a path containing "home-manager.nix").
+# Every host entry point and every role must import the Home Manager module,
+# directly or through another local import. Without it the deployed system has
+# no user environment.
+#
+# The check looks one hop only: host -> role, or role -> module. Every hop in
+# this tree is one hop, so a deeper walk would add code without adding coverage.
+# A decoy name does not pass, because the match requires a directory separator
+# in front of the module file.
 
 fail=0
-for f in profiles/*.nix machines/*.nix; do
-  if grep -Eq "home-manager\.nix" "$f"; then
+HM_REF='(\./|\.\./|[^[:space:]]/)home-manager\.nix'
+
+check_import() {
+  local f=$1 imp impPath
+  if grep -Eq "$HM_REF" "$f"; then
     echo "OK: $f imports home-manager"
-    continue
+    return 0
   fi
 
-  # Heuristic: only require Home Manager import for profile files or machine
-  # entries that look like deployments (they reference a profile or set
-  # a hostname or users). Skip pure module files (for example modules/zram.nix,
-  # modules/common-users.nix) which expose options and don't need to import home-manager.
-  # Only require Home Manager import for files that reference a profile
-  # (../profiles/ or profiles/) or appear to be a deployment (set hostname or
-  # define users.users). Pure modules (options, helper modules) are skipped.
-  # Skip pure module files that expose options (for example modules/zram.nix,
-  # modules/common-users.nix) — they don't need to import Home Manager.
-  if grep -Eq '^[[:space:]]*options[[:space:]]*=' "$f" || grep -Eq 'options[[:space:]]*=' "$f"; then
-    echo "SKIP: $f defines options (module); skipping Home Manager check"
-    continue
-  fi
-
-  # Skip the master machine configuration file; it's intentionally a
-  # machine-agnostic defaults file and does not need to import Home Manager.
-  if [ "$(basename "$f")" = "configuration.nix" ]; then
-    echo "SKIP: $f is the master machine configuration; skipping Home Manager check"
-    continue
-  fi
-
-  if ! grep -Eq '(\./|\../)?profiles/|networking\.hostName|users\.users' "$f"; then
-    echo "SKIP: $f appears to be a machine helper module (no profile/hostname/users); skipping Home Manager check"
-    continue
-  fi
-
-  # Check for local or relative imports (e.g. './cosmic-workstation.nix' or
-  # '../profiles/cosmic.nix') and see if any of those transitively import
-  # home-manager. We look for occurrences starting with ./ or ../ and ending
-  # with .nix.
-  localImports=$(grep -oE '(\./|\../)[^ \t\n]+\.nix' "$f" || true)
-  found=0
-  for imp in $localImports; do
-    # normalize path relative to repo root
+  # Follow local imports one level: a host may reach home-manager through the
+  # role it composes.
+  while IFS= read -r imp; do
     impPath=$(realpath -m "$(dirname "$f")/$imp")
-    if [ -f "$impPath" ] && grep -Eq "home-manager\.nix" "$impPath"; then
+    if [ -f "$impPath" ] && grep -Eq "$HM_REF" "$impPath"; then
       echo "OK: $f imports $imp which imports home-manager"
-      found=1
-      break
+      return 0
     fi
-  done
+  done < <(grep -oE '(\./|\../)[^ \t\n]+\.nix' "$f" || true)
 
-  if [ "$found" -eq 0 ]; then
-    echo "MISSING: $f does not import home-manager (directly or via local imports)" >&2
-    fail=1
-  fi
+  echo "MISSING: $f does not import home-manager (directly or via local imports)" >&2
+  return 1
+}
+
+for f in hosts/*/default.nix roles/*.nix; do
+  check_import "$f" || fail=1
 done
 
 if [ "$fail" -ne 0 ]; then
@@ -65,4 +43,4 @@ if [ "$fail" -ne 0 ]; then
   exit 2
 fi
 
-echo "All host files import Home Manager." 
+echo "All host files import Home Manager."

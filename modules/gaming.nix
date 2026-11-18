@@ -28,6 +28,10 @@ in {
     enable = lib.mkEnableOption "Enable gaming QoL packages and helpers (opt-in)";
     
     enableSteam = lib.mkEnableOption "Enable Steam via the NixOS programs.steam module";
+
+    # Kernel, network and flatpak tuning that only makes sense on a gaming
+    # desktop. Shared defaults stay secure, so a host opts in explicitly.
+    kernelTuning = lib.mkEnableOption "Apply gaming kernel, network and flatpak tuning (no CPU-mitigation trade)";
     
     optimizeSteamIO = lib.mkEnableOption "Enable I/O optimizations for Steam (reduces cloud sync delays)";
     
@@ -132,5 +136,67 @@ in {
     # Optionally write Proton-related variables into the system environment
     # so they are available system-wide (use with care).
     environment.variables = lib.mkIf cfg.enableProtonEnv cfg.protonEnv;
+
+    # Gaming kernel and network tuning. Deliberately excludes mitigations=off,
+    # tsc=reliable and clocksource=tsc: those trade security or portability for
+    # a few percent, and this host runs agents.
+    boot.kernelParams = lib.mkIf cfg.kernelTuning [
+      "nowatchdog"
+      "transparent_hugepage=always"
+      "processor.max_cstate=2"
+    ];
+
+    powerManagement.cpuFreqGovernor = lib.mkIf cfg.kernelTuning "performance";
+
+    services.udev.extraRules = lib.mkIf cfg.kernelTuning ''
+      ACTION=="add", SUBSYSTEM=="usb", TEST=="power/wakeup", ATTR{power/wakeup}="enabled"
+      ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", TEST=="queue/scheduler", ATTR{queue/scheduler}="none"
+    '';
+
+    boot.kernel.sysctl = lib.mkIf cfg.kernelTuning {
+      "net.core.default_qdisc" = "fq";
+      "net.ipv4.tcp_congestion_control" = "bbr";
+      "vm.swappiness" = 10;
+      "vm.vfs_cache_pressure" = 50;
+      "vm.dirty_ratio" = 10;
+      "vm.dirty_background_ratio" = 5;
+      "vm.min_free_kbytes" = 262144;
+      "vm.dirty_expire_centisecs" = 3000;
+      "vm.dirty_writeback_centisecs" = 1500;
+      "net.core.netdev_max_backlog" = 16384;
+      "net.core.somaxconn" = 8192;
+      "net.ipv4.tcp_fastopen" = 3;
+      "net.ipv4.tcp_mtu_probing" = 1;
+      "net.ipv4.tcp_window_scaling" = 1;
+      "net.ipv4.tcp_timestamps" = 1;
+      "net.ipv4.tcp_sack" = 1;
+      "net.core.rmem_max" = 134217728;
+      "net.core.wmem_max" = 134217728;
+      "net.ipv4.tcp_rmem" = "4096 87380 67108864";
+      "net.ipv4.tcp_wmem" = "4096 65536 67108864";
+      "vm.watermark_scale_factor" = 200;
+      "vm.page-cluster" = 0;
+      "net.core.optmem_max" = 65536;
+      "kernel.sched_migration_cost_ns" = 5000000;
+      "kernel.sched_autogroup_enabled" = 0;
+    };
+
+    # Steam and game libraries sit outside the home directory, so their flatpak
+    # overrides are gaming-specific rather than global.
+    system.activationScripts.gamingFlatpakOverrides =
+      lib.mkIf (cfg.kernelTuning && config.services.flatpak.enable) ''
+        mkdir -p /var/lib/flatpak/overrides
+
+        cat > /var/lib/flatpak/overrides/com.valvesoftware.Steam << EOF
+[Context]
+filesystems=xdg-data/applications:create;xdg-data/icons:create;/games:rw;/mnt:rw;/run/media:rw;xdg-music;xdg-pictures;xdg-videos;
+devices=all;
+
+[Environment]
+__NV_PRIME_RENDER_OFFLOAD=1
+__GLX_VENDOR_LIBRARY_NAME=nvidia
+__VK_LAYER_NV_optimus=NVIDIA_only
+EOF
+      '';
   };
 }

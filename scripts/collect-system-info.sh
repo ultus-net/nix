@@ -5,7 +5,7 @@
 
 set -eu
 
-OUTDIR="/tmp/nixos-base-system-info-$(date +%s)"
+OUTDIR="/tmp/nix-system-info-$(date +%s)"
 mkdir -p "$OUTDIR"
 
 save() {

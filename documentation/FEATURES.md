@@ -2,7 +2,7 @@
 
 ## Desktop Environments
 
-This flake provides **6 desktop environments** plus a **headless base profile**:
+This flake provides **3 desktop environments** plus a **headless base profile**:
 
 ### Desktop Environment Details
 
@@ -18,33 +18,9 @@ This flake provides **6 desktop environments** plus a **headless base profile**:
 - NetworkManager for network configuration
 - ZRAM compressed swap
 
-#### COSMIC (`cosmic-workstation`)
-**Display Server:** Wayland  
-**Resource Usage:** Medium (~3GB RAM)  
-**Use Cases:** Wayland desktops, System76 hardware
-
-**What's Included:**
-- COSMIC compositor and shell (Rust-based)
-- COSMIC applications (Files, Terminal, Settings, etc.)
-- All base packages + Firefox, VS Code, Alacritty
-- PipeWire audio stack
-- Wayland screen sharing support
-
-#### GNOME (`gnome-workstation`)
-**Display Server:** Wayland (X11 fallback)  
-**Resource Usage:** Medium (~3.5GB RAM)  
-**Use Cases:** Wayland desktops, touchpad-oriented workflows
-
-**What's Included:**
-- GNOME Shell with essential extensions
-- GNOME apps (Files, Terminal, Calendar, Contacts, etc.)
-- Firefox, VS Code, GNOME Text Editor
-- Wayland + XWayland for compatibility
-- PipeWire audio with noise cancellation
-
-#### KDE Plasma (`kde-workstation`)
-**Display Server:** Wayland (X11 available)  
-**Resource Usage:** Heavy (~4GB RAM)  
+#### KDE Plasma (`roles/kde.nix`)
+**Display Server:** Wayland (X11 available)
+**Resource Usage:** Heavy (~4GB RAM)
 **Use Cases:** Configurable Qt-based desktops
 
 **What's Included:**
@@ -55,20 +31,7 @@ This flake provides **6 desktop environments** plus a **headless base profile**:
 - Firefox, VS Code
 - Extensive customization options
 
-#### Cinnamon (`cinnamon-workstation`)
-**Display Server:** X11  
-**Resource Usage:** Medium (~2.5GB RAM)  
-**Use Cases:** Traditional desktop layouts
-
-**What's Included:**
-- Cinnamon desktop environment
-- Nemo file manager
-- Core Cinnamon applications
-- Firefox, VS Code
-- Traditional menu and panel layout
-- PipeWire audio stack
-
-#### XFCE (`xfce-workstation`)
+#### XFCE (`roles/xfce.nix`)
 **Display Server:** X11  
 **Resource Usage:** Light (~1.5GB RAM)  
 **Use Cases:** Lightweight desktop installations
@@ -81,7 +44,7 @@ This flake provides **6 desktop environments** plus a **headless base profile**:
 - Lightweight desktop environment
 - PipeWire audio stack
 
-#### Hyprland (`hyprland-workstation`)
+#### Hyprland (`roles/hyprland.nix`)
 **Display Server:** Wayland  
 **Resource Usage:** Light (~2GB RAM)  
 **Use Cases:** Dynamic tiling workflows
@@ -101,19 +64,16 @@ This flake provides **6 desktop environments** plus a **headless base profile**:
 | Desktop | Display | Weight | Typical Use |
 |---------|---------|--------|-------------|
 | **Base** | None | Minimal | Servers and headless systems |
-| **COSMIC** | Wayland | Medium | Wayland desktop |
-| **GNOME** | Wayland | Medium | General-purpose desktop |
 | **KDE** | Both | Heavy | Configurable Qt desktop |
-| **Cinnamon** | X11 | Medium | Traditional desktop layout |
 | **XFCE** | X11 | Light | Lightweight desktop |
 | **Hyprland** | Wayland | Light | Dynamic tiling |
 
 Install any desktop with:
 ```bash
-nixos-install --flake /mnt/nixos-base#<profile>
+nixos-install --flake /mnt/nix#tower
 ```
 
-See `profiles/README.md` for detailed desktop environment documentation.
+See `roles/README.md` for detailed desktop environment documentation.
 
 ## Optional Modules
 
@@ -147,7 +107,11 @@ Gaming compatibility layers and performance tools.
 ```nix
 imports = [ ../modules/gaming.nix ];
 gaming.enable = true;
+gaming.kernelTuning = true;  # opt-in kernel, network and flatpak tuning
 ```
+
+`gaming.kernelTuning` never disables CPU mitigations. Shared defaults stay
+secure, and the tuning only applies on the host that opts in.
 
 ### Development (`development.nix`)
 Development tools and language runtimes.
@@ -164,8 +128,9 @@ Development tools and language runtimes.
 **Enable:**
 ```nix
 imports = [ ../modules/development.nix ];
-development.enable = true;
 ```
+
+The module installs the toolchain directly, so the import is enough.
 
 ### Containers (`containers.nix`)
 Container and Kubernetes tools.
@@ -180,7 +145,7 @@ Container and Kubernetes tools.
 **Enable:**
 ```nix
 imports = [ ../modules/containers.nix ];
-containers.enable = true;
+machines.containers.enable = true;
 ```
 
 ### Virtualization (`virtualization.nix`)
@@ -221,18 +186,36 @@ sysadmin.enable = true;
 Laptop-specific power and hardware management.
 
 **What's Included:**
-- **Power:** TLP with optimized settings
-- **Battery:** Battery charge thresholds (if supported)
-- **Display:** Auto-brightness, screen timeout
-- **Input:** Touchpad gestures and palm detection
-- **Sleep:** Suspend/hibernate optimization
-- **Monitoring:** powerstat, powertop
+- **Power:** power-profiles-daemon and thermald (TLP is explicitly disabled)
+- **Battery:** upower reporting
+- **Input:** libinput touchpad handling
+- **Bluetooth:** BlueZ stack with Blueman
+- **Integration:** XDG desktop portal with the GTK backend
 
 **Enable:**
 ```nix
 imports = [ ../modules/laptop.nix ];
-laptop.enable = true;
 ```
+
+The module applies its defaults on import, so the import is enough.
+
+### Agent Sandbox (`agent-sandbox.nix`)
+Run a coding agent against one checkout without giving it the machine.
+
+**What's Included:**
+- `agent-sandbox run <project>`: a transient `systemd-nspawn` session with the
+  project at `/workspace`, a read-only store, and a tmpfs home
+- An allowlisting `CONNECT` proxy: the session has no network interface except
+  loopback, so the proxy is its only route out
+- `MemoryMax`, `CPUQuota` and `TasksMax` on the session scope
+
+**Enable:**
+```nix
+imports = [ ../../modules/agent-sandbox.nix ];
+machines.agentSandbox.enable = true;
+```
+
+See [AGENT-SANDBOX.md](AGENT-SANDBOX.md) for the boundary and its limits.
 
 ### Wallpapers
 NixOS wallpapers from `nixos-artwork` with automatic rotation support for desktop environments.
@@ -279,6 +262,8 @@ See `home/README.md` for Home Manager documentation.
 - Root login disabled
 - Password authentication disabled
 - Fail2ban available in security module
+- Agent sessions are opt-in per host (`machines.agentSandbox`) and reach the
+  network only through an allowlisting proxy, on port 443, for named hosts
 
 See `SECRETS.md` for secrets management options.
 

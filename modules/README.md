@@ -5,7 +5,6 @@ This directory contains modular NixOS configuration fragments. Each module is op
 ## Core Modules
 
 ### System Configuration
-- **`boot.nix`** - Boot loader and kernel configuration
 - **`networking.nix`** - Network management (NetworkManager)
 - **`security.nix`** - Security hardening and SSH configuration
 - **`audio.nix`** - PipeWire audio stack
@@ -13,14 +12,16 @@ This directory contains modular NixOS configuration fragments. Each module is op
 - **`zram.nix`** - ZRAM compressed swap
 - **`nvidia.nix`** - NVIDIA proprietary driver configuration
 - **`wallpapers.nix`** - NixOS official wallpaper collection with automatic rotation
-- **`auto-update.nix`** - Automatic flake updates via systemd timer
+- **`auto-upgrade.nix`** - Weekly rebuild from a reviewed `origin/main` commit
+- **`agent-sandbox.nix`** - Transient `systemd-nspawn` session with an
+  allowlisting CONNECT proxy, opt-in per host via `machines.agentSandbox`
 
 ### Package Collections
 - **`common-packages.nix`** - Essential CLI tools and modern replacements (htop, btop, ripgrep, fzf, eza, bat, git, etc.)
 - **`development.nix`** - Development tools and language runtimes
 
 ### Optional Feature Modules
-- **`gaming.nix`** - Gaming tools (Steam, Lutris, MangoHUD, etc.)
+- **`gaming.nix`** - Gaming tools plus opt-in kernel/network tuning (`gaming.kernelTuning`)
 - **`virtualization.nix`** - VM support (libvirt, QEMU, virt-manager)
 - **`laptop.nix`** - Laptop-specific settings (power management, TLP)
 - **`multimedia.nix`** - Media tools (VLC, GIMP, ffmpeg, OBS)
@@ -28,14 +29,11 @@ This directory contains modular NixOS configuration fragments. Each module is op
 - **`sysadmin.nix`** - System administration tools (backups, network diagnostics, hardware monitoring)
 
 ### Desktop Environments
-- **`cosmic.nix`** - System76 COSMIC desktop
-- **`gnome.nix`** - GNOME Shell
+- **`hyprland.nix`** - Hyprland Wayland compositor
 - **`kde.nix`** - KDE Plasma 6
-- **`cinnamon.nix`** - Cinnamon (Linux Mint)
 - **`xfce.nix`** - XFCE
 
 ### User Configuration
-- **`common-users.nix`** - User account management
 - **`home-manager.nix`** - Home Manager integration
 
 ## Usage
@@ -207,7 +205,7 @@ machines.wallpapers.rotationInterval = 300;  # seconds (5 minutes)
   - 3D renders (gear, moonscape, recursive, waterfall)
 - System-wide installation accessible to all desktop environments
 - Home Manager integration for automatic wallpaper symlinks
-- Rotation configured via COSMIC, GNOME, KDE, etc.
+- Rotation configured via desktop environments
 
 **Note:** This module is enabled by default in all desktop profiles. The Home Manager configuration ([home/hunter.nix](../home/hunter.nix)) automatically symlinks all wallpapers to `~/.wallpapers` for rotation.
 
@@ -242,29 +240,24 @@ in {
 }
 ```
 
-### auto-update.nix
+### auto-upgrade.nix
 
 ```nix
-autoUpdate = {
+machines.autoUpgrade = {
   enable = true;
-  interval = "weekly";      # daily, weekly, or monthly
-  autoRebuild = false;      # Automatically rebuild after update
-  flakePath = "/home/hunter/Documents/nixos-base";
-  notifyUser = "hunter";    # Desktop notifications
+  flakePath = "/home/hunter/Documents/nix";
+  ref = "main";             # remote branch to follow
+  dates = "weekly";         # systemd calendar expression
 };
 ```
 
 **Features:**
-- Automatic flake input updates via systemd timer
-- Configurable update intervals (daily, weekly, monthly)
-- Optional automatic system rebuild after updates
-- Desktop notifications when updates complete
-- Detailed logging to `/var/log/flake-updates.log`
-- Helpful shell aliases:
-  - `flake-update-now` - Trigger update immediately
-  - `flake-update-status` - Check service status
-  - `flake-update-log` - Watch live update log
-  - `flake-update-history` - View update history
+- `system.autoUpgrade` is the only updater: no second service, no aliases
+- A `preStart` hook runs `git fetch` and `merge --ff-only` for `ref`, so a host
+  only ever moves to a commit that passed CI on `main`
+- `--no-update-lock-file` keeps the lock file under review; bumping inputs is a
+  manual, reviewable commit
+- `nix.gc` stays configured in `modules/base.nix`
 
 ## Best Practices
 

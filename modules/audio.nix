@@ -8,7 +8,7 @@
   security.rtkit.enable = true;
 
   # Disable legacy PulseAudio service to avoid conflicts with PipeWire.
-  hardware.pulseaudio.enable = false;
+  services.pulseaudio.enable = false;
 
   # Enable PipeWire and related backends. Each attribute toggles support
   # for a particular compatibility layer or backend.
@@ -17,6 +17,7 @@
     alsa.enable = true;             # ALSA compatibility via PipeWire
     alsa.support32Bit = true;       # include 32-bit ALSA support for legacy apps
     pulse.enable = true;            # provide PulseAudio compatibility layer
-    jack.enable = true;             # enable JACK compatibility
+    # JACK support: install `pkgs.pipewire.jack` and use `pw-jack` in the
+    # session, instead of enabling the deprecated impurity switch.
   };
 }

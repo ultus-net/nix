@@ -1,0 +1,79 @@
+name: Dev Image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "containers/**"
+      - "flake.nix"
+      - "flake.lock"
+      - ".github/workflows/dev-image.yml"
+  pull_request:
+    paths:
+      - "containers/**"
+      - "flake.nix"
+      - "flake.lock"
+      - ".github/workflows/dev-image.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: dev-image-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/ultus-net/nix-dev
+  # One reference, asserted after load and used for every push. The image's
+  # name and tag come from containers/dev/default.nix, so a change there fails
+  # the load step instead of silently pushing a stale reference.
+  IMAGE_REF: ghcr.io/ultus-net/nix-dev:latest
+
+jobs:
+  build:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            accept-flake-config = true
+
+      - name: Build image
+        run: nix build .#dev-image --out-link result
+
+      - name: Load image
+        run: |
+          set -o pipefail
+          docker load < result 2>&1 | tee load.log
+          grep -Fxq "Loaded image: ${IMAGE_REF}" load.log
+
+      - name: Smoke test image
+        run: |
+          docker run --rm "${IMAGE_REF}" /bin/bash -c 'test -f /etc/ssl/certs/ca-bundle.crt'
+          docker run --rm "${IMAGE_REF}" node --version
+          docker run --rm "${IMAGE_REF}" go version
+          docker run --rm "${IMAGE_REF}" uv --version
+          docker run --rm "${IMAGE_REF}" opencode --version
+
+      - name: Log in to ghcr.io
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag and push
+        if: github.event_name != 'pull_request'
+        run: |
+          docker tag "${IMAGE_REF}" "${IMAGE}:${GITHUB_SHA}"
+          docker push "${IMAGE}:${GITHUB_SHA}"
+          docker push "${IMAGE_REF}"

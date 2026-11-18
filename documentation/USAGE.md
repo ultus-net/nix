@@ -4,17 +4,17 @@
 
 ```bash
 # Switch desktops (already installed system)
-sudo nixos-rebuild switch --flake .#kde-workstation
+sudo nixos-rebuild switch --flake .#tower
 
 # Update packages
-nix flake update && sudo nixos-rebuild switch --flake .#your-config
+nix flake update && sudo nixos-rebuild switch --flake .#your-host
 
 # Test in VM before deploying
-nix build .#nixosConfigurations.cosmic-workstation.config.system.build.vm
+nix build .#nixosConfigurations.tower.config.system.build.vm
 ./result/bin/run-*-vm
 
 # Create custom machine config (advanced)
-cp machines/example-machine.nix machines/my-machine.nix
+cp hosts/example/default.nix hosts/my-machine/default.nix
 # Edit my-machine.nix, then reference it in flake.nix
 ```
 
@@ -27,45 +27,40 @@ cp machines/example-machine.nix machines/my-machine.nix
 3. Clone this repository:
    ```bash
    cd /mnt
-   git clone https://github.com/ultus-net/nixos-base
+   git clone https://github.com/ultus-net/nix
    ```
 4. Generate hardware configuration:
    ```bash
    nixos-generate-config --root /mnt
    ```
-5. Install with your chosen desktop:
+5. Install a host:
    ```bash
-   nixos-install --flake /mnt/nixos-base#gnome-workstation
+   nixos-install --flake /mnt/nix#tower
    ```
 
 See `INSTALL.md` for detailed installation instructions.
 
 ## Switching Desktops
 
-After installation, you can switch between desktop environments:
+A host chooses its desktop by the role it imports. Edit the host entry point,
+change the role, then rebuild:
 
-### Switch to COSMIC
 ```bash
-sudo nixos-rebuild switch --flake .#cosmic-workstation
+# hosts/tower/default.nix imports ../../roles/kde.nix
+sudo nixos-rebuild switch --flake .#tower
 ```
 
-### Switch to GNOME
-```bash
-sudo nixos-rebuild switch --flake .#gnome-workstation
-```
-
-### Switch to KDE
-```bash
-sudo nixos-rebuild switch --flake .#kde-workstation
-```
+Available roles are `roles/kde.nix`, `roles/hyprland.nix`, `roles/xfce.nix`
+and `roles/base.nix` for a headless host. `scripts/switch-desktop.sh <desktop>
+[host]` rewrites the host's role import and rebuilds that host.
 
 ### Test Without Switching
 ```bash
 # Build without activating
-nixos-rebuild build --flake .#kde-workstation
+nixos-rebuild build --flake .#tower
 
 # Or using nix directly
-nix build .#nixosConfigurations.kde-workstation.config.system.build.toplevel
+nix build .#nixosConfigurations.tower.config.system.build.toplevel
 ```
 
 ## Helper Scripts
@@ -74,14 +69,12 @@ nix build .#nixosConfigurations.kde-workstation.config.system.build.toplevel
 Use the provided script to build or switch configurations:
 
 ```bash
-# Build the default (cosmic) configuration
+# Build the default configuration
 ./scripts/switch-host.sh
 
-# Switch to GNOME (requires root)
-sudo ./scripts/switch-host.sh .#gnome-workstation
-
-# Switch to KDE (requires root)
-sudo ./scripts/switch-host.sh .#kde-workstation
+# Switch a host (requires root)
+sudo ./scripts/switch-host.sh .#tower
+sudo ./scripts/switch-host.sh .#work-laptop
 ```
 
 ### Desktop Switcher
@@ -101,36 +94,36 @@ See `scripts/README.md` for complete script documentation.
 ## Creating Your Own Machine Configuration
 
 **When do you need this?** 
-- You want to customize beyond what profiles offer
+- You want to customize beyond what roles offer
 - You're setting up multiple machines with different hardware
 - You want machine-specific settings (hostname, users, hardware config)
 
 **Don't need this if:**
-- You just want to use a pre-built desktop (use profiles directly)
-- You're testing different desktops (just switch between profiles)
+- You just want to use a pre-built desktop (import a role)
+- You're testing different desktops (just change the role import)
 
 ### Steps:
 
 1. Copy the example machine template:
    ```bash
-   cp machines/example-machine.nix machines/my-machine.nix
+   cp hosts/example/default.nix hosts/my-machine/default.nix
    ```
 
-2. Edit `machines/my-machine.nix`:
+2. Edit `hosts/my-machine/default.nix`:
    ```nix
    { config, pkgs, lib, inputs, ... }:
    {
      imports = [
-       ./configuration.nix           # Base machine config
-       ./hardware-configuration.nix  # Your hardware config
-       ../profiles/gnome.nix         # Choose your desktop
+       ../../modules/base.nix        # Shared defaults
+       ./hardware.nix                # Your hardware config
+       ../../roles/kde.nix           # Choose your desktop
      ];
 
      # Set your hostname
      networking.hostName = "my-machine";
 
      # Add your user
-     machines.users = {
+     users.users = {
        yourname = {
          enable = true;
          isAdmin = true;
@@ -144,7 +137,7 @@ See `scripts/README.md` for complete script documentation.
    ```nix
    nixosConfigurations = {
      # ... existing configs ...
-     my-machine = mkSystem ./machines/my-machine.nix;
+     my-machine = mkSystem ./hosts/my-machine/default.nix;
    };
    ```
 
@@ -153,7 +146,7 @@ See `scripts/README.md` for complete script documentation.
    sudo nixos-rebuild switch --flake .#my-machine
    ```
 
-See `machines/README.md` for detailed machine configuration guide.
+See `hosts/README.md` for detailed machine configuration guide.
 
 ## Enabling Optional Modules
 
@@ -173,8 +166,7 @@ imports = [
 ];
 
 gaming.enable = true;
-gaming.steam = true;
-gaming.lutris = true;
+gaming.enableSteam = true;
 ```
 
 ### Add Development Tools
@@ -182,8 +174,6 @@ gaming.lutris = true;
 imports = [
   ../modules/development.nix
 ];
-
-development.enable = true;
 ```
 
 ### Laptop Configuration
@@ -191,9 +181,6 @@ development.enable = true;
 imports = [
   ../modules/laptop.nix
 ];
-
-laptop.enable = true;
-laptop.touchpad.enable = true;
 ```
 
 See `FEATURES.md` for all available modules.
@@ -204,15 +191,34 @@ Build and run a VM to test configurations before deploying:
 
 ```bash
 # Build VM
-nix build .#nixosConfigurations.gnome-workstation.config.system.build.vm
+nix build .#nixosConfigurations.work-laptop.config.system.build.vm
 
 # Run VM
 ./result/bin/run-*-vm
 ```
 
+## Agent Sessions
+
+`tower` and `work-laptop` install `agent-sandbox`. It runs an agent against one
+checkout in a throwaway container with no route to the internet except an
+allowlisting proxy:
+
+```bash
+sudo agent-sandbox run ~/Projects/some-checkout          # interactive shell
+sudo agent-sandbox run ~/Projects/some-checkout -- claude
+agent-sandbox list
+agent-sandbox stop --all
+```
+
+What the session can reach, what it cannot, and the first-run checks are in
+[AGENT-SANDBOX.md](AGENT-SANDBOX.md).
+
 ## Updating Your System
 
-### Update Flake Inputs
+A host with `machines.autoUpgrade.enable` rebuilds from `origin/main` on its own
+schedule, after fast-forwarding the checkout, so only commits that passed CI
+reach it. To update by hand:
+
 ```bash
 # Update all inputs
 nix flake update
@@ -223,7 +229,7 @@ nix flake lock --update-input nixpkgs
 
 ### Rebuild After Update
 ```bash
-sudo nixos-rebuild switch --flake .#your-config
+sudo nixos-rebuild switch --flake .#your-host
 ```
 
 ## Rolling Back
@@ -251,10 +257,10 @@ Before pushing changes, test locally:
 nix flake check
 
 # Build specific configuration
-nix build .#nixosConfigurations.gnome-workstation.config.system.build.toplevel
+nix build .#nixosConfigurations.tower.config.system.build.toplevel
 
 # Test VM boot
-nix build .#nixosConfigurations.gnome-workstation.config.system.build.vm
+nix build .#nixosConfigurations.work-laptop.config.system.build.vm
 ./result/bin/run-*-vm
 ```
 
@@ -264,7 +270,7 @@ If you encounter issues:
 
 1. Check `TROUBLESHOOTING.md` for common problems and solutions
 2. Review logs: `journalctl -xe`
-3. Verify configuration: `nixos-rebuild dry-run --flake .#your-config`
+3. Verify configuration: `nixos-rebuild dry-run --flake .#your-host`
 4. Ask for help in the NixOS community channels
 
 ## Next Steps

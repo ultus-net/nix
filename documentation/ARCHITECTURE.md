@@ -5,14 +5,18 @@ This document explains the repository structure and design decisions.
 ## Repository Layout
 
 ```
-nixos-base/
+nix/
 ├── flake.nix              # Main flake defining all configurations
 ├── modules/               # Reusable NixOS modules
-├── profiles/              # Desktop environment profiles
-├── machines/              # Machine-specific configurations
+├── roles/                 # Desktop environment roles
+├── hosts/                 # Machine-specific configurations
 ├── home/                  # Home Manager configurations
+├── pkgs/                  # Scripts and sources the modules install
+├── tests/                 # nixosTest definitions, one per host
+├── lib/                   # Flake output helpers
+├── containers/            # Dev container image
 ├── scripts/               # Helper scripts
-└── .github/              # CI/CD workflows
+└── .github/               # CI/CD workflows
 ```
 
 ## Design Philosophy
@@ -22,62 +26,75 @@ nixos-base/
 This flake uses **composition** to build configurations:
 
 - **Modules** (`modules/`) are small, focused pieces (audio, gaming, development)
-- **Profiles** (`profiles/`) compose modules into complete desktop environments
-- **Machines** (`machines/`) compose profiles with hardware-specific config
+- **Roles** (`roles/`) compose modules into complete desktop environments
+- **Hosts** (`hosts/`) compose roles with hardware-specific config
 
 ### Desktop Agnostic Core
 
-The core configuration (`machines/configuration.nix`) is desktop-agnostic:
+The core configuration (`modules/base.nix`) is desktop-agnostic:
 - Boot configuration
 - Locale and timezone
 - SSH and networking
 - User management
 - System maintenance
 
-Desktop-specific configuration lives in `profiles/` and their imported modules.
+Desktop-specific configuration lives in `roles/` and their imported modules.
+
+### Agent Sessions Are Contained
+
+`modules/agent-sandbox.nix` installs an `agent-sandbox` launcher and an
+allowlisting `CONNECT` proxy. A session is a transient `systemd-nspawn`
+container: read-only store, one read-write project bind, tmpfs home, loopback
+only, and egress solely through the proxy's unix socket. It is opt-in per host
+through `machines.agentSandbox.enable`, so nothing about agent isolation reaches
+a host that did not ask for it. See [AGENT-SANDBOX.md](AGENT-SANDBOX.md).
+
+### Hosts Are Tested, Not Inspected
+
+`tests/hosts.nix` builds a `nixosTest` per host from the real host module, with
+QEMU's disk and bootloader substituted for the host's. CI runs those, so a host
+that cannot reach `multi-user.target` fails the pull request.
 
 ## Flake Structure
 
 ### Inputs
-- **nixpkgs** - Pinned to a specific commit for reproducibility
-- **home-manager** - User environment management
-- **nixos-cosmic** - COSMIC desktop environment
-- **flake-utils** - Flake utilities for multi-system support
-- **devshell** - Development shell configuration
+- **nixpkgs** - `nixpkgs-unstable`, pinned by `flake.lock`. One package set; no
+  stable overlay
+- **home-manager** - Follows the same nixpkgs input
+
+`lib/forAllSystems.nix` replaces `flake-utils`: it nests each per-system output
+under its system name. `devShells.default` uses `pkgs.mkShell`, so `devshell`
+is not an input either.
 
 ### Outputs
 
 #### Per-System Outputs
-Available on all supported systems (x86_64-linux, aarch64-linux, x86_64-darwin, aarch64-darwin):
+x86_64-linux only:
 
-- **devShells.default** - Development environment with tools
-- **packages.default** - QoL package bundle
-- **packages.cosmicImage** - Docker image with dev tools
-- **packages.kdeImage** - Docker image for KDE development
-- **homeManagerModules.default** - Home Manager module for QoL
+- **devShells.default** - Development shell (`pkgs.mkShell`): toolchains,
+  linters and CLI tools
+- **packages.dev-image** - OCI toolchain image for dev containers
 
-#### System-Wide Outputs
-Available at the top level:
-
-- **nixosConfigurations** - All 7 system configurations (6 desktops + 1 headless)
-- **homeConfigurations** - Standalone Home Manager configurations
-- **templates** - Project templates for new configurations
+#### Top-Level Outputs
+- **nixosConfigurations** - All system configurations (base-server, tower, work-laptop)
+- **homeConfigurations."hunter@x86_64-linux"** - Standalone Home Manager configuration
+- **templates.homeManager** - Project template for a Home Manager configuration
 
 ## Module System
 
 ### Module Categories
 
-1. **Desktop Environments** (`modules/*-desktop.nix`)
+1. **Desktop Environments** (`modules/kde.nix`, `modules/hyprland.nix`, `modules/xfce.nix`)
    - Self-contained desktop environment configuration
-   - Examples: `gnome.nix`, `kde.nix`, `cosmic.nix`
+   - Examples: `kde.nix`, `hyprland.nix`, `xfce.nix`
 
 2. **Feature Modules** (`modules/*.nix`)
    - Optional functionality (gaming, development, multimedia)
    - Enabled via `<module>.enable = true;`
 
-3. **Core Modules** (`modules/common-*.nix`)
-   - Essential functionality (packages, users, security)
-   - Usually imported by profiles
+3. **Core Modules** (`modules/base.nix`, `modules/security.nix`,
+   `modules/networking.nix`)
+   - Essential functionality shared by roles
 
 ### Module Design Pattern
 
@@ -100,29 +117,29 @@ Modules follow this pattern:
 ### Namespace Conventions
 
 - `commonPackages.*` - Common package configuration
-- `machines.*` - Machine-level configuration (users, zram)
+- `machines.*` - Machine-level configuration (zram, containers, auto-upgrade)
 - `multimedia.*` - Multimedia feature configuration
 - `gaming.*` - Gaming feature configuration
 - `development.*` - Development tools configuration
 - (etc.)
 
-## Profile Structure
+## Role Structure
 
-Profiles compose modules into complete desktop environments:
+Roles compose modules into complete desktop environments:
 
 ```nix
 { config, pkgs, lib, inputs, ... }:
 {
   imports = [
-    ../machines/configuration.nix  # Base machine config
+    ../modules/base.nix  # Base machine config
     ../modules/common-packages.nix # CLI tools
-    ../modules/gnome.nix           # Desktop environment
+    ../modules/kde.nix             # Desktop environment
     ../modules/audio.nix           # Audio support
     ../modules/fonts.nix           # Font configuration
     # ... other modules
   ];
 
-  # Profile-specific configuration
+  # Role-specific configuration
   commonPackages.enable = true;
   # ...
 }
@@ -132,9 +149,9 @@ Profiles compose modules into complete desktop environments:
 
 Machine configurations are deployment-specific:
 
-1. Import base configuration (`machines/configuration.nix`)
+1. Import base configuration (`modules/base.nix`)
 2. Import hardware configuration (generated by installer)
-3. Import chosen profile
+3. Import chosen role
 4. Set machine-specific options (hostname, users, etc.)
 
 Example:
@@ -142,14 +159,14 @@ Example:
 { config, pkgs, lib, inputs, ... }:
 {
   imports = [
-    ./configuration.nix
-    ./hardware-configuration.nix
-    ../profiles/gnome.nix
+    ../../modules/base.nix
+    ./hardware.nix
+    ../../roles/kde.nix
   ];
 
   networking.hostName = "my-laptop";
 
-  machines.users.alice = {
+  users.users.alice = {
     enable = true;
     isAdmin = true;
   };
@@ -161,10 +178,10 @@ Example:
 ```
 flake.nix
   └─> nixosConfigurations.<name>
-       └─> machines/<name>.nix or profiles/<name>.nix
-            ├─> machines/configuration.nix (base)
-            ├─> hardware-configuration.nix (hardware)
-            └─> profiles/<desktop>.nix (desktop)
+       └─> hosts/<name>/default.nix or roles/<name>.nix
+            ├─> modules/base.nix (base)
+            ├─> hardware.nix (hardware)
+            └─> roles/<desktop>.nix (desktop)
                  ├─> modules/common-packages.nix
                  ├─> modules/<desktop>.nix
                  ├─> modules/audio.nix
@@ -179,33 +196,30 @@ Home Manager is integrated two ways:
 1. **NixOS Module** - Included in system configurations
 2. **Standalone** - For non-NixOS systems
 
-The `homeManagerModules.default` provides a reusable module with:
-- Shell configuration (bash, starship)
-- Git configuration
-- Neovim setup
-- VSCode configuration
-- Development tools
 
 ## CI/CD Pipeline
 
-The GitHub Actions workflow validates:
+`.github/workflows/ci.yml` proves behaviour, not syntax:
 
-1. **Basic Validation** - Syntax checks, structure validation
-2. **Flake Structure** - Metadata and expected outputs
-3. **Build Configurations** - All 7 configurations evaluate correctly
-4. **Module Validation** - All modules have valid syntax
-5. **Security Checks** - Scan for hardcoded secrets
-6. **Home Manager** - Standalone configurations validate
-7. **VM Boot Tests** - Critical configurations actually boot
+1. **Branch name** - pull request head branches start with an allowed prefix
+2. **Flake check** - `nix flake check` runs the layering gate, the
+   `initialHashedPassword` gate, and one `nixosTest` per host
+3. **Build** - `nix build .#nixosConfigurations.<host>.config.system.build.toplevel`
+   for `base-server`, `tower` and `work-laptop`
+
+Each host test boots the real host module with QEMU's root disk and without the
+NVIDIA GPU, waits for `multi-user.target`, and asserts `sshd`, an active
+`firewall.service`, and a host-specific service.
 
 See `.github/CI-CD-GUIDE.md` for complete pipeline documentation.
 
 ## Nixpkgs Pin
 
-This flake pins nixpkgs to a specific commit for reproducibility:
+`flake.lock` pins nixpkgs to a specific revision:
 
 ```nix
-nixpkgs.url = "github:NixOS/nixpkgs/16c7794d0a28b5a37904d55bcca36003b9109aaa";
+nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+```
 ```
 
 To update:
@@ -215,10 +229,10 @@ nix flake lock --update-input nixpkgs
 
 ## User Management
 
-Users are managed via the `machines.users` option defined in `modules/common-users.nix`:
+Users are declared with the standard NixOS `users.users` options:
 
 ```nix
-machines.users.alice = {
+users.users.alice = {
   enable = true;
   isAdmin = true;  # Add to wheel group
   shell = pkgs.bash;
@@ -245,7 +259,7 @@ Auto-sizing uses: `min(total_ram / 2, maxSize)`
 
 ## System Maintenance
 
-Automatic garbage collection is configured in `machines/configuration.nix`:
+Automatic garbage collection is configured in `modules/base.nix`:
 
 - Runs daily via systemd timer
 - Keeps last 3 generations
@@ -270,7 +284,7 @@ Security defaults from `modules/security.nix`:
 - Fingerprint auth (if hardware available)
 - mDNS/Avahi for local discovery
 
-Additional hardening available in `machines/configuration.nix`.
+Additional hardening available in `modules/base.nix`.
 
 ## Development Environment
 
@@ -296,21 +310,13 @@ Includes:
 
 See `USAGE.md` for testing commands.
 
-## Migration from Legacy Structure
-
-Previous versions used `hosts/` for configurations. This was refactored to:
-- `profiles/` - Reusable desktop configurations
-- `machines/` - Machine-specific deployments
-
-Old files are in `hosts-deprecated/` for reference.
-
 ## Contributing
 
 When adding new features:
 
 1. Create focused modules in `modules/`
 2. Document options and usage
-3. Update relevant profiles
+3. Update relevant roles
 4. Add tests to CI pipeline
 5. Update documentation
 
