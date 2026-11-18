@@ -148,15 +148,6 @@
           # Real machine configurations
           tower = mkSystem ./hosts/tower/default.nix;
           work-laptop = mkSystem ./hosts/work-laptop/default.nix;
-
-          # KDE Plasma 6 - Feature-rich Qt desktop
-          kde-workstation = mkSystem ./roles/kde.nix;
-
-          # XFCE - Lightweight, traditional desktop
-          xfce-workstation = mkSystem ./roles/xfce.nix;
-
-          # Hyprland - Omarchy-style Wayland desktop
-          hyprland-workstation = mkSystem ./roles/hyprland.nix;
         };
 
       # Out-of-system content like templates

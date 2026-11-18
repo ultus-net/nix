@@ -29,20 +29,23 @@ sudo nixos-rebuild switch --flake /etc/nixos#tower
 This script is automatically available system-wide after rebuilding.
 
 ### `switch-desktop.sh`
-Switch between desktop environments without manual configuration editing.
+Point a host at a different desktop role and rebuild that host. It shows the
+diff, asks for confirmation, and rewrites the host's role import.
 
 **Usage:**
 ```bash
-./scripts/switch-desktop.sh <desktop-name>
+./scripts/switch-desktop.sh <desktop> [host]
 ```
 
 **Example:**
 ```bash
-# Switch from XFCE to KDE
-./scripts/switch-desktop.sh kde
+# Switch tower from KDE to Hyprland
+./scripts/switch-desktop.sh hyprland tower
 ```
 
-**Available desktops:** kde, xfce, hyprland
+**Available desktops:** kde, xfce, hyprland. The host defaults to
+`hostname -s`, so `./scripts/switch-desktop.sh hyprland` works on the machine
+it targets.
 
 ### `switch-host.sh`
 Build or switch to a host from the flake. Defaults to `.#tower`.

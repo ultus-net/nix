@@ -1,57 +1,73 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Helper script to switch between desktop environments
-# Usage: ./scripts/switch-desktop.sh <desktop-name>
+# Point a host at a different desktop role, then rebuild that host.
+# Usage: ./scripts/switch-desktop.sh <desktop> [host]
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 
-# Available desktops
-DESKTOPS=(
-  "kde"
-  "xfce"
-  "hyprland"
-)
+DESKTOPS=(kde xfce hyprland)
 
 show_usage() {
-  echo "Usage: $0 <desktop-name>"
+  echo "Usage: $0 <desktop> [host]"
   echo ""
   echo "Available desktops:"
   for desktop in "${DESKTOPS[@]}"; do
     echo "  - $desktop"
   done
   echo ""
-  echo "Example: $0 kde"
+  echo "Available hosts:"
+  for host_file in "$REPO_ROOT"/hosts/*/default.nix; do
+    echo "  - $(basename "$(dirname "$host_file")")"
+  done
+  echo ""
+  echo "Example: $0 hyprland tower"
   exit 1
 }
 
-if [ $# -eq 0 ]; then
-  show_usage
-fi
+[ "$#" -ge 1 ] || show_usage
 
 DESKTOP="$1"
+HOST="${2:-$(hostname -s)}"
 
-# Validate desktop choice
-if [[ ! " ${DESKTOPS[@]} " =~ " ${DESKTOP} " ]]; then
-  echo "Error: Unknown desktop '$DESKTOP'"
-  echo ""
+if [[ ! " ${DESKTOPS[*]} " =~ " ${DESKTOP} " ]]; then
+  echo "Error: unknown desktop '$DESKTOP'"
   show_usage
 fi
 
-PROFILE_PATH="$REPO_ROOT/roles/${DESKTOP}.nix"
+ROLE_PATH="$REPO_ROOT/roles/${DESKTOP}.nix"
+HOST_FILE="$REPO_ROOT/hosts/${HOST}/default.nix"
 
-if [ ! -f "$PROFILE_PATH" ]; then
-  echo "Error: Profile not found at $PROFILE_PATH"
-  exit 1
+[ -f "$ROLE_PATH" ] || { echo "Error: role not found at $ROLE_PATH"; exit 1; }
+[ -f "$HOST_FILE" ] || { echo "Error: host not found at $HOST_FILE"; show_usage; }
+
+CURRENT_ROLE="$(grep -oE '\.\./\.\./roles/[a-z]+\.nix' "$HOST_FILE" | head -1 || true)"
+NEW_ROLE="../../roles/${DESKTOP}.nix"
+
+if [ "$CURRENT_ROLE" = "$NEW_ROLE" ]; then
+  echo "$HOST already imports $NEW_ROLE; nothing to change."
+  exit 0
 fi
 
-echo "Switching to $DESKTOP desktop environment..."
+TMP_FILE="$(mktemp)"
+trap 'rm -f "$TMP_FILE"' EXIT
+
+if [ -n "$CURRENT_ROLE" ]; then
+  awk -v old="$CURRENT_ROLE" -v new="$NEW_ROLE" '
+    !done && index($0, old) { sub(old, new); done = 1 } { print }
+  ' "$HOST_FILE" > "$TMP_FILE"
+else
+  awk -v new="    $NEW_ROLE" '
+    !done && /\.\.\/\.\.\/modules\/base\.nix/ { print; print new; done = 1; next } { print }
+  ' "$HOST_FILE" > "$TMP_FILE"
+fi
+
+echo "Host $HOST: ${CURRENT_ROLE:-no desktop role} -> $NEW_ROLE"
 echo ""
-echo "This will rebuild your system with the ${DESKTOP}-workstation configuration."
-echo "Current configuration will be saved as a previous generation."
+diff -u "$HOST_FILE" "$TMP_FILE" || true
 echo ""
-read -p "Continue? (y/N) " -n 1 -r
+read -p "Apply and rebuild $HOST? (y/N) " -n 1 -r
 echo
 
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -59,27 +75,17 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
   exit 0
 fi
 
-# Check if we're root or can sudo
+cp "$TMP_FILE" "$HOST_FILE"
+
 if [ "$EUID" -ne 0 ]; then
-  if ! command -v sudo &> /dev/null; then
-    echo "Error: This script requires root privileges and sudo is not available."
-    exit 1
-  fi
   SUDO="sudo"
 else
   SUDO=""
 fi
 
-# Rebuild the system
-echo "Building configuration..."
-$SUDO nixos-rebuild switch --flake "$REPO_ROOT#${DESKTOP}-workstation"
+$SUDO nixos-rebuild switch --flake "$REPO_ROOT#${HOST}"
 
 echo ""
-echo "Switched to $DESKTOP desktop."
-echo ""
-echo "You may need to:"
-echo "  1. Log out and log back in"
-echo "  2. Select the new desktop from your display manager"
-echo "  3. Reboot if switching between Wayland/X11"
-echo ""
-echo "To rollback: sudo nixos-rebuild --rollback switch"
+echo "Switched $HOST to $DESKTOP."
+echo "Log out and back in, and pick the session in the display manager."
+echo "Roll back with: sudo nixos-rebuild --rollback switch"

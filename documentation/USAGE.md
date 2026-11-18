@@ -51,8 +51,8 @@ sudo nixos-rebuild switch --flake .#tower
 ```
 
 Available roles are `roles/kde.nix`, `roles/hyprland.nix`, `roles/xfce.nix`
-and `roles/base.nix` for a headless host. `scripts/switch-desktop.sh` still
-builds the `<desktop>-workstation` outputs, which are being retired.
+and `roles/base.nix` for a headless host. `scripts/switch-desktop.sh <desktop>
+[host]` rewrites the host's role import and rebuilds that host.
 
 ### Test Without Switching
 ```bash

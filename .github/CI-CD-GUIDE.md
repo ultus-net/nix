@@ -60,9 +60,8 @@ Optional VM boot tests that verify systems actually boot:
    - **Only runs when:**
      - You add the `test-vm-boot` label to a PR
       - Does not run for pushes to `main` or unlabeled pull requests
-   - Tests 2 representative configurations:
+   - Tests the headless configuration:
      - `base-server` (headless, minimal)
-     - `xfce-workstation` (lightweight desktop)
    - Verifies each VM:
      - Boots successfully with 2GB RAM
      - Reaches `multi-user.target` or `graphical.target`
@@ -95,7 +94,7 @@ Found hardcoded secrets or sensitive data. Review and fix before merging.
 VM tests are expensive (time and resources), so they only run when explicitly requested:
 
 ### Trigger VM Tests in CI
-Add the label `test-vm-boot` to your PR. The VM boot tests will run for base-server and xfce-workstation.
+Add the label `test-vm-boot` to your PR. The VM boot test will run for base-server.
 
 ### Local Testing
 You can build and run a VM locally:
@@ -121,9 +120,10 @@ The workflow cancels in-progress runs for the same branch, preventing wasted res
 | base-server | Yes | Label-gated | Headless configuration |
 | tower | Yes | No | KDE Plasma desktop |
 | work-laptop | Yes | No | KDE Plasma laptop |
-| xfce-workstation | No (VM only) | Label-gated | XFCE desktop |
 
-VM boot tests are limited to `base-server` and `xfce-workstation` and run only when a pull request has the `test-vm-boot` label.
+VM boot tests are limited to `base-server` and run only when a pull request has
+the `test-vm-boot` label. Desktop switching happens inside a host, so there is
+no per-desktop configuration to boot.
 
 ## Troubleshooting
 

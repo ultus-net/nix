@@ -185,7 +185,7 @@ The GitHub Actions workflow validates:
 4. **Module Validation** - All modules have valid syntax
 5. **Security Checks** - Scan for hardcoded secrets
 6. **Home Manager** - Standalone configuration validates
-7. **VM Boot Tests** - `base-server` and `xfce-workstation` boot, on a labeled PR
+7. **VM Boot Tests** - `base-server` boots, on a labeled PR
 
 See `.github/CI-CD-GUIDE.md` for complete pipeline documentation.
 
