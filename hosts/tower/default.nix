@@ -21,7 +21,7 @@
     ../../modules/multimedia.nix
     ../../modules/virtualization.nix
     ../../modules/containers.nix
-    ../../modules/auto-update.nix
+    ../../modules/auto-upgrade.nix
     ../../modules/deploy-config.nix
     # NOTE: zram.nix is already imported via modules/base.nix
   ];
@@ -123,12 +123,11 @@
   # Configuration deployment helper
   deployConfig.enable = true;
 
-  # Automatic flake updates (weekly by default)
-  autoUpdate.enable = true;
-  autoUpdate.interval = "weekly";  # Options: daily, weekly, monthly
-  autoUpdate.autoRebuild = true;  # Set to true to auto-rebuild after updates
-  # autoUpdate.flakePath defaults to "/etc/nixos" - override if needed
-  autoUpdate.notifyUser = "hunter";
+  # Automatic updates follow origin/main, so a PR gates every change.
+  machines.autoUpgrade = {
+    enable = true;
+    flakePath = "/home/hunter/Documents/nix";
+  };
 
   # KDE Plasma 6 configuration
   kde.enable = true;

@@ -6,6 +6,7 @@
   imports = [
     ../../modules/base.nix
     ../../roles/kde.nix
+    ../../modules/auto-upgrade.nix
     ./hardware.nix
   ];
 
@@ -14,6 +15,12 @@
   # ============================================================================
   
   networking.hostName = "work-laptop";
+
+  # Automatic updates follow origin/main, so a PR gates every change.
+  machines.autoUpgrade = {
+    enable = true;
+    flakePath = "/home/hunter/Documents/nix";
+  };
 
   # ============================================================================
   # Regional Settings
