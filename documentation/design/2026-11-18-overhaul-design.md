@@ -1,6 +1,6 @@
 # nixos-base overhaul: design
 
-Status: draft for adversarial review
+Status: draft, after adversarial review round 1
 Date: 2026-11-18
 
 ## Intent
@@ -28,8 +28,9 @@ reinstall and no disk encryption work is in scope.
    A host opts into each.
 4. `nix flake check` is the gate. CI builds both hosts, enforces formatting and
    dead-code lint, and blocks on failure.
-5. Agents execute inside an nspawn container that cannot see the owner's keys,
-   home directory or credentials, with an egress allowlist and an ephemeral root.
+5. Agents execute inside a per-session nspawn container that cannot see the
+   owner's keys, home directory or credentials, cannot reach the host Nix daemon,
+   and reaches the network only through a host-side allowlisting proxy.
 6. Documentation describes the tree that exists, not the two trees that used to
    exist.
 
@@ -42,8 +43,8 @@ reinstall and no disk encryption work is in scope.
 - Secrets management (sops/agenix). There are no secrets in the repo today and
   the sandbox design is what keeps it that way.
 - Remote access (Tailscale, VPN, bastion). Out of scope, noted as a follow-up.
-- A microVM tier. Container isolation is the chosen level; microVM stays a
-  documented escalation path, not an implementation.
+- A microVM tier inside the flake. A libvirt VM on the tower is the escalation
+  path, provisioned separately (see `documentation/design/2026-11-18-opentofu-devserver.md`).
 
 ## Constraints
 
@@ -52,8 +53,9 @@ reinstall and no disk encryption work is in scope.
   `nixos-rebuild build`.
 - `main` is unprotected and direct pushes are possible. The workflow rules
   require branch protection, so enabling it is part of the work.
-- `machines/hardware-configuration.nix` is host-specific truth. It moves, it is
-  not rewritten.
+- `machines/hardware-configuration.nix` is host-specific truth for tower only.
+  `machines/work-laptop.nix:47-68` carries its hardware inline and has no
+  hardware file. Splitting it is real work, not a rename.
 - The repo is public. Host details already published (disk UUID, monitor
   serials) are accepted debt; new personal data does not get added.
 
@@ -68,14 +70,14 @@ Cheapest, and it fixes the structural problems. It fails the actual requirement,
 because a sandbox that depends on the operator remembering flags is not a
 sandbox.
 
-### B. Layering plus declarative nspawn sandbox (chosen)
+### B. Layering plus per-session nspawn container (chosen)
 
-Reorganise the tree, then add `containers.agent` as a declarative NixOS
-container with a project bind mount, no home mount, private network, and
-ephemeral root. Isolation is namespace-level. Kernel is shared.
+Reorganise the tree, then add a launcher that starts a transient nspawn
+container per session: private user namespace, project-only bind mount, no home,
+no host Nix daemon, egress only through a host proxy. Ephemeral root.
 
-This is the design below. It is testable in CI, boots in under a second, and
-keeps the whole boundary in one module.
+Isolation is namespace-level and the kernel is shared. That is accepted, and the
+libvirt VM is the documented escalation.
 
 ### C. Layering plus microVM per session
 
@@ -84,9 +86,6 @@ answer if the threat includes hostile binaries. Cost is more moving parts,
 slower starts, and KVM dependence on the work laptop.
 
 Rejected as the default because it is friction, and friction gets routed around.
-Kept as a documented escalation: the sandbox contract (project mount, no home,
-egress allowlist) is written so a microVM can replace the container without
-changing how sessions are launched.
 
 ## Target tree
 
@@ -108,7 +107,7 @@ hosts/
     hardware.nix          generated partition/mount truth
   work-laptop/
     default.nix
-    hardware.nix
+    hardware.nix          extracted from the current inline block
 roles/
   desktop-kde.nix
   desktop-hyprland.nix
@@ -123,107 +122,135 @@ users/
 lib/
   mkSystem.nix            nixosSystem wrapper
 scripts/
-  check-layering.sh       fails if roles/ or modules/ mention hosts/
-  agent-sandbox.sh        start/stop/shell for the container
+  check-layering.sh       parses imports, fails on upward references
+  agent-sandbox.sh        installed by the module, not read from the project
 documentation/
 ```
 
 Rules the tree encodes:
 
-- `hosts/*` is the only place a hostname, timezone, hardware path, or user
-  appears.
-- `roles/*` compose modules and set defaults with `lib.mkDefault`. No host paths.
+- `hosts/*` owns hostname, timezone, hardware paths, the primary user, and
+  `home-manager.users.<name>` wiring. One typed interface: `hosts.<name>`.
+- `roles/*` compose modules and set defaults with `lib.mkDefault`. No host paths,
+  no usernames.
 - `modules/*` own options and implementation. Importing a module has no effect
-  until the host or role enables it.
-- `--hostname`-style placeholders, example machines, and generated-docs drift go
-  away.
+  until a host or role enables it.
 
 ## Decisions
 
 ### D1. Rename `machines/` to `hosts/`, `profiles/` to `roles/`
 
-One-time `git mv` in the first commit so history follows the files. The words
-match what the things are: a host is a physical machine, a role is a job the
-machine does.
+One-time `git mv` in its own commit so history follows the files. The laptop
+hardware extraction is a separate, reviewable commit after the rename, because
+`machines/work-laptop.nix:47-68` is inline and the owner must confirm the UUIDs.
 
 ### D2. Hardware files live with the host, never with a role
 
-`fileSystems` placeholders disappear from roles entirely. A role that could
-boot against `/dev/disk/by-label/nixos-root` is a footgun: it evaluates and
-installs a system that cannot mount its own root. Hosts carry real hardware
-config, or they are examples that do not enter `nixosConfigurations`.
+`fileSystems` placeholders disappear from roles entirely. A role that could boot
+against `/dev/disk/by-label/nixos-root` is a footgun: it evaluates and installs a
+system that cannot mount its own root. The tower `fileSystems."/games"` mount
+gains `nofail`, because a QEMU boot has no games disk and systemd otherwise
+blocks at `local-fs.target` (`machines/tower.nix:38-50`).
 
 ### D3. Desktop set is KDE, Hyprland, XFCE
 
 Deleted: `profiles/cosmic.nix`, `profiles/gnome.nix`, `profiles/cinnamon.nix`,
-`modules/cosmic.nix`, `modules/gnome.nix`, `modules/cinnamon.nix`, plus the
-COSMIC install guide and the 160 commented-out COSMIC lines in
-`home/hunter.nix`. `tower` runs KDE. `work-laptop` runs XFCE (light, and it is a
-work machine). Hyprland stays buildable and selectable.
+`modules/cosmic.nix`, `modules/gnome.nix`, `modules/cinnamon.nix`, the COSMIC
+install guide, and the 160 commented-out COSMIC lines in `home/hunter.nix`.
+`tower` keeps KDE. `work-laptop` moves from COSMIC to XFCE unless the owner says
+otherwise: it is a work machine, and COSMIC is the desktop being removed.
 
-### D4. One NixOS container, declared in a module
+`scripts/switch-desktop.sh` is rewritten against host-scoped roles. Today it
+lists no Hyprland (`scripts/switch-desktop.sh:11-17`) and builds removed
+`<desktop>-workstation` outputs (`:77`), so the old script cannot survive.
 
-`modules/agent-sandbox.nix` declares `containers.agent` with:
+### D4. Sandbox: per-session transient nspawn, not a singleton container
 
-- `config`: minimal NixOS, `environment.systemPackages` carrying git, nix,
-  bash, ripgrep, and the agent CLIs.
-- `bindMounts.project`: read-write mount of one project directory, chosen at
-  start time by the wrapper. Nothing else from `/home`.
-- `bindMounts.agent-auth`: read-only mount of a single token file, when the
-  agent needs one. Explicit and per-agent.
-- `privateNetwork = true` with a container-local firewall allowlisting `github.com`,
-  `cache.nixos.org`, `registry.npmjs.org` and the agent vendor API, so package
-  installs work and arbitrary egress does not.
-- `ephemeral = true`: root filesystem discarded on stop.
-- No `hunter` user inside. One `agent` user, no sudo, no password.
+A declarative `containers.agent` cannot meet the requirement. `bindMounts` are
+resolved at evaluation time, so the project and token paths cannot be chosen per
+session. It also maps container root to host root unless `privateUsers` is set,
+and the NixOS container binds the host `/nix/var/nix/daemon-socket` read-only,
+which the agent can still connect to. A daemon connection lets the agent build
+fixed-output derivations whose builders run on the host with host networking:
+that is a complete egress bypass and arbitrary host compute.
 
-Launch path is `scripts/agent-sandbox.sh <project-dir>`, which starts the
-container, bind-mounts the project, opens a shell as `agent`, and stops the
-container on exit. The script is the only supported entry point.
+Revised shape:
+
+- **Launcher:** `agent-sandbox` is installed by `modules/agent-sandbox.nix` into
+  the system profile. It is root-owned, outside any project directory, and never
+  executes code from the mounted project.
+- **Namespace:** `systemd-nspawn --private-users=pick
+  --private-users-ownership=map`, all capabilities dropped, no devices beyond
+  `/dev/{null,zero,full,random,urandom,tty}`.
+- **Filesystem:** `--ephemeral`, one read-write bind of the chosen project
+  directory, one tmpfs for the agent home. No host home, no `/etc`, no
+  `/var/run/dbus`, no container access to the host journal or systemd.
+- **Nix:** `/nix/store` is bind-mounted read-only and the daemon socket is
+  *not* mounted. The sandbox therefore has a fixed pre-realised tool closure and
+  cannot build. Projects that need more tooling get the closure realised on the
+  host before launch; this is stated in the module docs rather than hidden.
+- **Network:** `--network-veth` with a per-session address. Container egress is
+  a single nftables rule: allow the host proxy address, drop everything else,
+  including direct DNS. The host runs an allowlisting TLS CONNECT proxy
+  (hostname allowlist, no IP passthrough). Clients use it as
+  `http_proxy`/`https_proxy` and have no other resolver, so DNS tunnelling is
+  not available.
+- **Token:** brokered per session into the agent-home tmpfs, readable and
+  writable only by the mapped uid, destroyed at stop. The long-lived credential
+  never enters the sandbox.
+- **Limits:** `TasksMax`, `MemoryMax`, `CPUQuota` on the nspawn scope, so a fork
+  bomb or memory hog inside does not take the desktop down.
+- **Lifecycle:** a transient unit owned by the host, not a shell trap. A crashed
+  launcher still leaves a unit that is reaped, and `agent-sandbox stop --all`
+  sweeps.
+
+What still escapes: a kernel bug, or a container escape via a privileged device
+that was not dropped. Both are accepted and both are closed by moving the same
+workload into the libvirt VM.
 
 ### D5. Gaming tuning becomes opt-in, and `mitigations=off` goes
 
 `roles/gaming.nix` keeps the parts that are real wins and carry no security
 cost: zram, BBR, `nowatchdog`, THP, I/O scheduler, gamemode, scheduler. It drops
-`mitigations=off` (a 5 to 10 percent CPU gain is a poor trade on a box that runs
-agents) and `tsc=reliable`/`clocksource=tsc` unless the owner asks for them back.
+`mitigations=off` (5-10 percent CPU is a poor trade on a box that runs agents)
+and `tsc=reliable`/`clocksource=tsc` unless the owner asks for them back.
 
 `kernel.yama.ptrace_scope = 0` moves out of the global base config. Default is
-`1`. PINCE gets an opt-in that sets `0` on the hosts that want it. PINCE is also
+`1`. PINCE gets an opt-in that sets `0` on the hosts that want it, and PINCE is
 removed from `roles/server.nix`.
-
-This is the one decision the owner should veto if he disagrees. It is one line
-in one file to reverse.
 
 ### D6. One update path
 
 `modules/auto-update.nix` is deleted. `system.autoUpgrade` is the only updater,
 configured per host, with the flake path an option rather than a hardcoded
-`/home/hunter/Documents/nixos-base`. `nix.gc` stays where it is, next to it.
+`/home/hunter/Documents/nixos-base`. `nix.gc` stays beside it.
+
+Open point: auto-upgrading from a mutable local checkout is not a reviewed
+history. The owner picks between "update the local checkout weekly" and "track
+the remote branch and update only commits that passed CI".
 
 ### D7. Inputs: one nixpkgs, no stable overlay, no flake-utils
 
 - `nixpkgs-unstable` only. `nixpkgs-stable` and the `google-chrome` overlay are
-  deleted. Chrome comes from unstable like everything else.
-- `flake-utils` is dropped. With one architecture, an explicit
-  `forAllSystems` helper in `lib/` is three lines and one fewer input.
+  deleted. Chrome comes from unstable.
+- `flake-utils` is dropped. With one architecture, an explicit `forAllSystems`
+  helper in `lib/` is three lines and one fewer input.
 - `home-manager` follows nixpkgs, unchanged.
-- `devshell` is dropped. A `devShells.default = pkgs.mkShell` replaces it; the
-  devshell overlay and the `setup-dev` command go with it.
+- `devshell` is dropped. `devShells.default = pkgs.mkShell` replaces it.
 
 ### D8. Flake outputs become honest
 
-- `nixosConfigurations`: one entry per host. The six
-  `<desktop>-workstation` outputs disappear.
+- `nixosConfigurations`: one entry per host. The six `<desktop>-workstation`
+  outputs disappear; desktop choice becomes a role import inside the host.
 - `formatter.x86_64-linux = nixfmt-rfc-style`.
-- `checks.x86_64-linux`: formatting check, `statix`, `deadnix`, and the layering
-  check. These are the things `nix flake check` runs.
-- `packages.cosmicImage` and `packages.kdeImage` are deleted. They are unused
-  OCI demos, not part of any host.
-- `packages.default` (the `cosmic-qol` echo script) is deleted.
-- `homeConfigurations` keeps `hunter@x86_64-linux`; the dead commented examples
-  go.
+- `checks.x86_64-linux`: formatting check, `statix`, `deadnix`, layering check,
+  and one `nixosTest` per host.
+- `packages.cosmicImage`, `packages.kdeImage`, and `packages.default` (the
+  `cosmic-qol` echo script) are deleted. Nothing consumes them.
+- `homeConfigurations` keeps `hunter@x86_64-linux`.
 - `templates.homeManager` retargets at the surviving home config.
+- `homeManagerModules.default` (the 120-line COSMIC QoL module inside
+  `flake.nix:207-326`) is deleted, not moved. It duplicates `users/hunter.nix`.
 
 ### D9. CI replaces validation theatre with builds
 
@@ -231,80 +258,131 @@ configured per host, with the flake path an option rather than a hardcoded
 
 | Job | What it proves |
 | --- | --- |
-| `flake-check` | `nix flake check` passes; formatting, statix, deadnix, layering |
+| `flake-check` | `nix flake check` passes: formatting, statix, deadnix, layering, `nixosTest` |
 | `build` (matrix: tower, work-laptop) | `nix build .#nixosConfigurations.<host>.config.system.build.toplevel` |
-| `branch-name` | branch matches the allowed prefixes |
-| `vm-boot` (label `test-vm-boot`) | host reaches multi-user.target in QEMU |
+| `branch-name` | branch matches the allowed prefixes, using `github.head_ref` and exempting `main` |
 
 Deleted from CI: per-file `nix-instantiate --parse`, the `grep` secret scan that
-cannot see `initialHashedPassword`, the `flake.json` introspection dance, the
-`accept-flake-config = true` setting, and the six-way desktop matrix.
+cannot see `initialHashedPassword`, the `flake.json` introspection dance,
+`accept-flake-config = true`, the six-way desktop matrix, and the QEMU serial
+scraper.
 
-Cache: `nix-community/cache-nix-action` (Magic Nix Cache), no token.
+Testing replaces the scraper with `nixosTest` per host. A host test asserts
+`multi-user.target` plus host-specific facts (firewall on, expected services
+active), and runs under `checks` so `nix flake check` executes it. The tower
+test overrides `/games` and the NVIDIA device so it does not depend on hardware
+that QEMU does not have.
+
+Cache: `nix-community/cache-nix-action` is the GitHub Actions cache, keyed on
+`flake.lock`, not a binary cache. It is worth testing, not assuming: the two
+closures may exceed the 10 GB allowance and the restore can cost more than it
+saves. Public-repo standard runners are free, so wall time is the real cost, not
+minutes.
 
 ### D10. Bootstrap credentials become an explicit, loud step
 
 `initialHashedPassword = ""` stays only in `hosts/example/`, which is not
-exported. Real hosts get a documented `users.users.hunter.hashedPasswordFile`
-or a first-boot `passwd`. The CI check that guards this is a `grep` for
-`initialHashedPassword` outside `hosts/example/`, which is case-sensitive and
-therefore actually catches the attribute.
+exported. Real hosts use `users.users.hunter.hashedPasswordFile`, provisioned
+root-only before the first switch, or a first-boot `passwd`. Activation reads the
+file on every switch, so the file must exist and stay readable by root; the
+migration commit removes the old `initialHashedPassword` attributes in the same
+change that adds the file. A CI check greps for `initialHashedPassword` outside
+`hosts/example/`; it is case-sensitive, so it actually matches.
 
 ### D11. State that must not break
 
 `system.stateVersion = "24.11"`, `home.stateVersion = "24.11"`, the games-drive
 mount, the SDDM kscreen symlink, the Flatpak overrides and the NVIDIA setup all
-carry over unchanged in behaviour. Each one is moved with its options intact,
-not rewritten.
+carry over in behaviour. Each moves with its options intact, not rewritten.
 
 ## Migration order
 
-Each commit evaluates on its own, so a bisect stays useful.
+Every commit keeps CI green, so a bisect stays useful.
 
-1. `refactor: move machines to hosts and profiles to roles` (git mv only, plus
-   import path fixes and the layering check).
-2. `refactor: delete unused desktops and dead modules` (COSMIC, GNOME, Cinnamon,
-   `modules/boot.nix`, `example-machine.nix`, OCI images).
-3. `refactor: type the module surface` (delete `common-users.nix`, typed
-   options everywhere, PINCE opt-in).
-4. `refactor: split gaming tuning from secure-dev` (`mitigations`, ptrace, DE
-   roles per host).
-5. `refactor: single update path` (delete `auto-update.nix`).
-6. `chore: refresh inputs` (drop stable, flake-utils, devshell; lock update).
-7. `ci: replace validation with builds` (new workflow, formatter, checks).
-8. `feat(agent-sandbox): declarative nspawn sandbox` (module, script, docs).
-9. `docs: rewrite documentation for the new tree` (README, ARCHITECTURE,
-   INSTALL, delete the two overlapping install guides, one survives).
+1. `ci: make the pipeline tolerant of the move` — drop the `machines/` and
+   desktop-output assertions, add the layering check, keep everything else.
+2. `refactor: move machines to hosts and profiles to roles` — `git mv` plus
+   import path fixes.
+3. `refactor: extract laptop hardware` — split
+   `machines/work-laptop.nix:47-68` into `hosts/work-laptop/hardware.nix`.
+4. `refactor: delete unused desktops and dead modules` — COSMIC, GNOME, Cinnamon,
+   `modules/boot.nix`, `example-machine.nix`, OCI images, `homeManagerModules`.
+5. `refactor: type the module surface` — delete `common-users.nix`, typed
+   options, PINCE opt-in.
+6. `refactor: split gaming tuning from secure-dev` — mitigations, ptrace, DE role
+   per host.
+7. `refactor: single update path` — delete `auto-update.nix`.
+8. `chore: refresh inputs` — drop stable, flake-utils, devshell; lock update.
+9. `ci: replace validation with builds` — new workflow, `nixosTest`, formatter,
+   checks.
+10. `feat(agent-sandbox): per-session nspawn sandbox` — module, launcher, proxy,
+    docs.
+11. `docs: rewrite documentation for the new tree`.
 
 ## Acceptance checks
 
-- `nix flake check` exits 0.
+- `nix flake check` exits 0, including both `nixosTest`s.
 - `nix build .#nixosConfigurations.tower.config.system.build.toplevel` succeeds
   in CI for both hosts.
 - `nixos-rebuild build --flake .#tower` succeeds on the real machine.
-- `scripts/agent-sandbox.sh ~/Projects/x` gives a shell where:
-  `ls ~/.ssh` fails, `cat ~/.gnupg/pubring.kbx` fails, `curl https://example.com`
-  fails, `git clone https://github.com/NixOS/nixpkgs` works, and stopping the
-  container discards writes outside the project mount.
-- `./scripts/switch-desktop.sh hyprland` still rebuilds a working session.
-- `git grep -n 'initialHashedPassword = ""' -- ':!hosts/example'` is empty.
+- Sandbox, with positive controls proving the test can fail:
+  - `curl https://example.com` fails; `curl https://github.com` succeeds.
+  - `curl https://1.1.1.1` fails, and `dig @1.1.1.1 example.com` fails.
+  - `ls /home/hunter` fails.
+  - `cat /nix/var/nix/daemon-socket/socket` fails and `nix build` fails.
+  - A file written outside the project mount is gone after `stop`.
+  - `ps` inside shows no host processes.
+  - Starting twice concurrently gives two isolated units.
+- `agent-sandbox` resolves from `/run/current-system/sw/bin`, not from the
+  project.
+- `./scripts/switch-desktop.sh hyprland` rebuilds a working session on tower.
+- `git grep -n 'initialHashedPassword' -- ':!hosts/example'` is empty.
 - `main` requires the CI check and a PR, and head branches auto-delete.
 
 ## Risks
 
 | Risk | Mitigation |
 | --- | --- |
-| nspawn shares the host kernel; a kernel bug escapes the cage | Accepted, documented. MicroVM is the escalation path and the launch contract does not change |
-| Ephemeral root discards agent state each session (auth, caches) | Auth is an explicit read-only mount; caches are cheap to rebuild; the project mount persists |
-| Egress allowlist breaks a package fetch | Allowlist covers github, cache.nixos.org, npm; adding a host is a one-line change with a comment naming the reason |
-| Nix inside the container needs store access and experimental features | Container config sets `nix.settings.experimental-features`; store is shared by the NixOS container mechanism, verified in acceptance |
-| Two full system builds on GitHub runners are slow | Magic Nix Cache, and only two hosts. If it exceeds the free minutes, move to a self-hosted runner or build only on PRs that touch `hosts/` |
+| Shared kernel; a kernel bug escapes | Accepted. The libvirt VM is the escalation and the launcher contract does not change |
+| Ephemeral root discards agent state (auth, caches) | Auth is a per-session tmpfs token; caches rebuild inside the session |
+| Fixed tool closure is too narrow for some projects | Host realises the closure before launch; documented, and `agent-sandbox --with <flake-attr>` extends it explicitly |
+| Proxy allowlist breaks a fetch | Allowlist is a single list with a reason per entry |
+| `private-users-ownership=map` needs a filesystem that supports idmapped mounts | ext4 on tower does; verified by the acceptance check that writes into the project |
+| Two full builds are slow | Measure first. Public runners are free; if wall time hurts, build only hosts touched by the diff |
 | Dropping `mitigations=off` costs gaming performance | Owner may veto D5; it is one line |
 
-## Open questions for the owner
+## Owner decisions required
 
-1. Does `work-laptop` stay in this repo, or does the repo drop to `tower` only
-   and the laptop get its own flake? Keeping both is fine but doubles CI.
+1. Does `work-laptop` stay in this repo, and does it move to XFCE?
 2. Veto D5 (`mitigations=off` removal) or keep it?
-3. Initial egress allowlist: is the agent only talking to GitHub and its vendor
-   API, or does it need package registries beyond npm?
+3. Egress allowlist contents beyond GitHub, the agent vendor API and
+   `cache.nixos.org`.
+4. Auto-upgrade from the mutable local checkout, or from reviewed remote
+   commits only?
+5. Keep a `server` role (`base-server`) at all, or is tower the only headless
+   case?
+6. Long-lived agent credential: which one, and how short is "short-lived"?
+
+## Appendix: adversarial review round 1
+
+Reviewer: Kimi K3.1 Pro, adversarial pass over this document and the repo.
+Verdict: REVISE_SHAPE. Resolutions:
+
+| Finding | Resolution |
+| --- | --- |
+| Container root maps to host root (`privateUsers` default) | D4: `--private-users=pick` with idmapped ownership, all caps dropped |
+| Host Nix daemon socket reachable inside container | D4: daemon socket not mounted; fixed closure; `nix build` fails by design |
+| Declarative `bindMounts` cannot be chosen per session | D4: transient per-session nspawn from an immutable launcher |
+| `privateNetwork = true` provides no connectivity as described | D4: veth with explicit addressing and a host proxy |
+| FQDN allowlist is not expressible in nftables; DNS tunnelling | D4: allowlisting CONNECT proxy, no other resolver, drop direct egress |
+| Launcher inside the project can be rewritten by the agent | D4: launcher installed into the system profile |
+| Token readable when mounted read-only | D4: per-session tmpfs copy, destroyed at stop |
+| Migration commits are red | Migration order: CI-tolerance commit first |
+| `switch-desktop.sh` cannot build removed outputs | D3: rewritten against host-scoped roles |
+| Laptop has no hardware file to rename | D1/D2: explicit extraction commit |
+| Layering grep is unsound | `scripts/check-layering.sh` parses import nodes, with fixtures |
+| `hashedPasswordFile` checked at activation only | D10: file provisioned before switch, old attributes removed same commit |
+| `vm-boot` proves little and `/games` breaks it | D9: `nixosTest` with hardware overrides, `nofail` on `/games` |
+| Cache action misdescribed, cost reasoning wrong | D9: measured, not assumed |
+| `branch-name` job semantics wrong | D9: `github.head_ref`, `main` exempt |
+| Sandbox acceptance tests prove the wrong things | Acceptance: positive controls and attack cases |
