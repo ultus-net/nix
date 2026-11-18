@@ -22,6 +22,16 @@ The proxy accepts `CONNECT` only, only on the ports in
 belongs to an allowed name, and the proxy resolves names itself, so there is no
 resolver inside to tunnel DNS through.
 
+It resolves each name once, drops every address that is not globally routable
+and unicast, and dials one of the addresses it kept. An allowed name cannot
+point the session at a LAN host, at loopback, at a link-local address, or at a
+multicast group. The dial takes the resolved address, so no second lookup can
+change where the connection goes.
+
+A `*.example.com` entry covers `example.com` itself as well as its subdomains.
+Matching is on label boundaries, so `evil-example.com` and
+`example.com.evil.example` do not match it.
+
 ## What it does not do
 
 - It is a container, not a VM. A kernel bug or a container escape reaches the

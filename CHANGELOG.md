@@ -82,9 +82,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   interface except loopback, and its one route out is a unix socket to a proxy
   that accepts `CONNECT` on port 443 for allowlisted names only. A literal IP is
   refused and there is no resolver inside the session.
+- The proxy resolves a name once, keeps only addresses that are globally
+  routable and unicast, and dials one of those addresses. An allowed name cannot
+  point the session at a LAN host, at loopback, at a link-local address, or at a
+  multicast group, and no second lookup can change where the dial goes.
 - An agent session cannot use the Nix daemon, so it cannot build a
   fixed-output derivation whose builder would run on the host network. The store
   is mounted read-only and the daemon socket is not mounted.
+- `checks.<system>.agent-sandbox-proxy` exercises the proxy's allowlist matching,
+  its address classification and its dialer, so a widening of any of them fails
+  CI.
+- The auto-upgrade unit trusts only its configured checkout (`safe.directory`
+  names that path) rather than every repository git can see.
 
 ### Added - Performance Optimizations (January 2026)
 
