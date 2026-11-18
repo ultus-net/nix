@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- `dev-image` flake output and `containers/dev`: an OCI toolchain image with
+  Node, Python, Go, and agent CLIs, built from the flake's nixpkgs. CI publishes
+  it to `ghcr.io/ultus-net/nixos-base-dev`.
+
 ### Added - Performance Optimizations (January 2026)
 
 #### System-Level Improvements

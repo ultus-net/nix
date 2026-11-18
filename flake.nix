@@ -135,6 +135,11 @@
           '';
         };
 
+        # Dev toolchains (Node, Python, Go) plus agent CLIs in one image. Built
+        # from this flake's nixpkgs, so there is no second dependency source.
+        # It is a toolchain image, not a security boundary.
+        packages.dev-image = import ./containers/dev { inherit pkgs; };
+
         # OCI / Docker image containing a lightweight dev environment
         # Use `copyToRoot` with `buildEnv` instead of the deprecated `contents`.
         packages.cosmicImage = pkgs.dockerTools.buildImage {

@@ -56,6 +56,7 @@ Switch desktops anytime: `./scripts/switch-desktop.sh cosmic`
 - [hosts/](hosts/README.md) - Machine configuration guide
 - [home/](home/README.md) - Home Manager setup
 - [scripts/](scripts/README.md) - Helper scripts
+- [containers/](containers/dev/README.md) - Dev container image
 
 ## Features
 
