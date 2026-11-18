@@ -180,24 +180,27 @@ Home Manager is integrated two ways:
 
 ## CI/CD Pipeline
 
-The GitHub Actions workflow validates:
+`.github/workflows/ci.yml` proves behaviour, not syntax:
 
-1. **Basic Validation** - Home Manager import validator, layering gate and its self-test
-2. **Flake Structure** - Metadata and expected outputs
-3. **Build Configurations** - `base-server`, `tower` and `work-laptop` evaluate and build
-4. **Module Validation** - All modules have valid syntax
-5. **Security Checks** - Scan for hardcoded secrets
-6. **Home Manager** - Standalone configuration validates
-7. **VM Boot Tests** - `base-server` boots, on a labeled PR
+1. **Branch name** - pull request head branches start with an allowed prefix
+2. **Flake check** - `nix flake check` runs the layering gate, the
+   `initialHashedPassword` gate, and one `nixosTest` per host
+3. **Build** - `nix build .#nixosConfigurations.<host>.config.system.build.toplevel`
+   for `base-server`, `tower` and `work-laptop`
+
+Each host test boots the real host module with QEMU's root disk and without the
+NVIDIA GPU, waits for `multi-user.target`, and asserts `sshd`, the nftables
+firewall chain, and a host-specific service.
 
 See `.github/CI-CD-GUIDE.md` for complete pipeline documentation.
 
 ## Nixpkgs Pin
 
-This flake pins nixpkgs to a specific commit for reproducibility:
+`flake.lock` pins nixpkgs to a specific revision:
 
 ```nix
-nixpkgs.url = "github:NixOS/nixpkgs/16c7794d0a28b5a37904d55bcca36003b9109aaa";
+nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+```
 ```
 
 To update:

@@ -15,7 +15,7 @@
   system.stateVersion = "24.11";
 
   # Allow unfree packages (VS Code, proprietary drivers, etc.)
-  nixpkgs.config.allowUnfree = true;
+  # Set in flake.nix for every host, so a test harness can own that option.
 
   # Enable flakes and new nix commands by default so users can run
   # `nix flake update` and other modern nix commands without extra flags.

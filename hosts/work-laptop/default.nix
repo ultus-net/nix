@@ -76,9 +76,9 @@
         "bluetooth"       # bluetooth device management
       ];
 
-      # IMPORTANT: Set a real password after first boot!
-      # Run: sudo passwd hunter
-      initialHashedPassword = lib.mkDefault "";
+      # No password hash is committed. The account starts locked; set the
+      # first password on the console with `sudo passwd hunter` after the first
+      # switch.
 
       openssh.authorizedKeys.keys = [
         # Add your SSH public keys here for remote access

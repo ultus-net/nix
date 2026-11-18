@@ -94,10 +94,10 @@
         "bluetooth"       # bluetooth device management
       ];
 
-      # CRITICAL: Set a real password hash before deploying to production!
-      # Generate with: nix-shell -p mkpasswd --run 'mkpasswd -m sha-512'
-      # An empty hash allows passwordless login - INSECURE for production!
-      initialHashedPassword = lib.mkDefault "";
+      # No password hash is committed. The account starts locked; set the
+      # first password on the console with `sudo passwd hunter` after the first
+      # switch. CI fails if `initialHashedPassword` reappears outside
+      # hosts/example.
 
       openssh.authorizedKeys.keys = [
         # Add your SSH public keys here

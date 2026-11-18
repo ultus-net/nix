@@ -36,7 +36,10 @@
       mkSystem = profile: lib.nixosSystem {
         system = "x86_64-linux";
         specialArgs = { inputs = self.inputs; };
-        modules = [ profile ];
+        modules = [
+          { nixpkgs.config.allowUnfree = true; }
+          profile
+        ];
       };
     in
     forAllSystems ({ system, pkgs }: {
@@ -99,6 +102,32 @@
           just
         ];
       };
+
+      formatter = pkgs.nixfmt-rfc-style;
+
+      checks = {
+        # The layering gate and its self-test.
+        layering = pkgs.runCommand "check-layering" {
+          nativeBuildInputs = [ pkgs.python3 ];
+        } ''
+          cd ${self}
+          python3 scripts/check-layering.py
+          python3 scripts/check-layering.py --self-test
+          touch $out
+        '';
+
+        # No committed password hashes on a real host. hosts/example documents
+        # the shape and is not exported.
+        no-initial-password = pkgs.runCommand "check-no-initial-password" { } ''
+          cd ${self}
+          if grep -rn 'initialHashedPassword' --include='*.nix' . \
+            | grep -v '^\./hosts/example/'; then
+            echo "initialHashedPassword outside hosts/example" >&2
+            exit 1
+          fi
+          touch $out
+        '';
+      } // import ./tests/hosts.nix { inherit self pkgs; };
     }) // {
       nixosConfigurations = {
         # Headless base. Kept as a role-only output so it cannot rot.
