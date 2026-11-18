@@ -4,12 +4,18 @@ set -euo pipefail
 # Every host entry point and every role must import the Home Manager module,
 # directly or through another local import. Without it the deployed system has
 # no user environment.
+#
+# The check looks one hop only: host -> role, or role -> module. Every hop in
+# this tree is one hop, so a deeper walk would add code without adding coverage.
+# A decoy name does not pass, because the match requires a directory separator
+# in front of the module file.
 
 fail=0
+HM_REF='(\./|\.\./|[^[:space:]]/)home-manager\.nix'
 
 check_import() {
   local f=$1 imp impPath
-  if grep -Eq "home-manager\.nix" "$f"; then
+  if grep -Eq "$HM_REF" "$f"; then
     echo "OK: $f imports home-manager"
     return 0
   fi
@@ -18,7 +24,7 @@ check_import() {
   # role it composes.
   while IFS= read -r imp; do
     impPath=$(realpath -m "$(dirname "$f")/$imp")
-    if [ -f "$impPath" ] && grep -Eq "home-manager\.nix" "$impPath"; then
+    if [ -f "$impPath" ] && grep -Eq "$HM_REF" "$impPath"; then
       echo "OK: $f imports $imp which imports home-manager"
       return 0
     fi

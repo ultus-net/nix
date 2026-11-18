@@ -14,7 +14,11 @@ import sys
 import tempfile
 from pathlib import Path
 
-SEARCH_DIRS = ("roles", "profiles", "modules")
+SEARCH_DIRS = ("roles", "modules")
+# Any code reference counts, not only one inside an `imports` list. A role or
+# module has no reason to name a hosts/ path in code at all, and matching every
+# reference also catches the indirect spellings (a `let` binding, an attribute
+# set passed down) that an imports-only match would miss.
 HOSTS_REF = re.compile(r"(?<![\w.-])hosts/")
 
 

@@ -48,5 +48,8 @@ home. Nothing persists between `--rm` runs, so log in again per session.
 ## Updates
 
 CI rebuilds and pushes on every push to `main` that touches `containers/`,
-`flake.nix`, or `flake.lock`. The package also shows up in
-`nix flake show`, so `nix build .#dev-image` always matches the pinned inputs.
+`flake.nix`, or `flake.lock`. Pull requests build the image and run a smoke test
+without pushing. The smoke test asserts the loaded reference, the shell, the CA
+bundle, and one binary per toolchain, so a package rename fails CI instead of
+publishing a broken image. The package also shows up in `nix flake show`, so
+`nix build .#dev-image` always matches the pinned inputs.

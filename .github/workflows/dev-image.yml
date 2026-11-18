@@ -26,6 +26,10 @@ permissions:
 
 env:
   IMAGE: ghcr.io/ultus-net/nixos-base-dev
+  # One reference, asserted after load and used for every push. The image's
+  # name and tag come from containers/dev/default.nix, so a change there fails
+  # the load step instead of silently pushing a stale reference.
+  IMAGE_REF: ghcr.io/ultus-net/nixos-base-dev:latest
 
 jobs:
   build:
@@ -43,10 +47,21 @@ jobs:
             accept-flake-config = true
 
       - name: Build image
-        run: nix build .#dev-image --print-out-paths
+        run: nix build .#dev-image --out-link result
 
       - name: Load image
-        run: docker load < result
+        run: |
+          set -o pipefail
+          docker load < result 2>&1 | tee load.log
+          grep -Fxq "Loaded image: ${IMAGE_REF}" load.log
+
+      - name: Smoke test image
+        run: |
+          docker run --rm "${IMAGE_REF}" /bin/bash -c 'test -f /etc/ssl/certs/ca-bundle.crt'
+          docker run --rm "${IMAGE_REF}" node --version
+          docker run --rm "${IMAGE_REF}" go version
+          docker run --rm "${IMAGE_REF}" uv --version
+          docker run --rm "${IMAGE_REF}" opencode --version
 
       - name: Log in to ghcr.io
         if: github.event_name != 'pull_request'
@@ -59,6 +74,6 @@ jobs:
       - name: Tag and push
         if: github.event_name != 'pull_request'
         run: |
-          docker tag "${IMAGE}:latest" "${IMAGE}:${GITHUB_SHA}"
+          docker tag "${IMAGE_REF}" "${IMAGE}:${GITHUB_SHA}"
           docker push "${IMAGE}:${GITHUB_SHA}"
-          docker push "${IMAGE}:latest"
+          docker push "${IMAGE_REF}"
