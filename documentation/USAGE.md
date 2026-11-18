@@ -123,7 +123,7 @@ See `scripts/README.md` for complete script documentation.
      networking.hostName = "my-machine";
 
      # Add your user
-     machines.users = {
+     users.users = {
        yourname = {
          enable = true;
          isAdmin = true;

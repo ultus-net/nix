@@ -9,11 +9,9 @@
     # Desktop environment - Switched to KDE for stability
     ../../roles/kde.nix
 
-    # User management
-    ../../modules/common-users.nix
-
     # Hardware modules
     ../../modules/nvidia.nix
+    ../../modules/pince.nix
 
     # Security module can now be safely imported with KDE
     ../../modules/security.nix
@@ -74,8 +72,11 @@
     MaxRetentionSec=1week
   '';
 
+  # PINCE is a game-memory debugger; it needs ptrace, so it is host-scoped.
+  pince.enable = true;
+
   # Primary user configuration
-  machines.users = {
+  users.users = {
     hunter = {
       isNormalUser = true;
       description = "Hunter";

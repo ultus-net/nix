@@ -1,0 +1,14 @@
+refactor: delete the shared users module and scope PINCE to the host
+
+`modules/common-users.nix` existed to merge an untyped `machines.users` attribute
+set into `users.users`. That bought nothing: every host declared the same shape
+NixOS already validates. The module is gone, the three host files declare
+`users.users` directly, and the module surface no longer contains a
+`types.anything`.
+
+PINCE is a game-memory debugger that needs ptrace, so both roles no longer enable
+it. Tower imports the module and sets `pince.enable = true`; work-laptop and the
+headless role do not ship it.
+
+Docs follow: `machines.users` is `users.users` everywhere, and the component
+READMEs stop listing the deleted module.

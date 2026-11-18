@@ -42,7 +42,7 @@ The "hunter" username is just an example. To use your own:
 
 1. Copy `home/hunter.nix` to `home/yourusername.nix`
 2. Edit `hosts/example/default.nix` (or your machine config):
-   - Change `machines.users.hunter` to `machines.users.yourusername`
+   - Change `users.users.hunter` to `users.users.yourusername`
    - Change `home-manager.users.hunter` to `home-manager.users.yourusername`
 3. Update the import: `home-manager.users.yourusername = import ../home/yourusername.nix;`
 4. Rebuild: `sudo nixos-rebuild switch --flake .#your-host`
@@ -99,7 +99,7 @@ Yes, but it's not recommended. Desktop environments can conflict with each other
 Edit your machine configuration:
 
 ```nix
-machines.users = {
+users.users = {
   firstuser = {
     isNormalUser = true;
     description = "First User";

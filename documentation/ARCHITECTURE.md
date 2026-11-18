@@ -144,7 +144,7 @@ Example:
 
   networking.hostName = "my-laptop";
 
-  machines.users.alice = {
+  users.users.alice = {
     enable = true;
     isAdmin = true;
   };
@@ -204,10 +204,10 @@ nix flake lock --update-input nixpkgs
 
 ## User Management
 
-Users are managed via the `machines.users` option defined in `modules/common-users.nix`:
+Users are declared with the standard NixOS `users.users` options:
 
 ```nix
-machines.users.alice = {
+users.users.alice = {
   enable = true;
   isAdmin = true;  # Add to wheel group
   shell = pkgs.bash;

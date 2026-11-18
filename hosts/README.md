@@ -7,7 +7,7 @@ entry point. A host composes the shared defaults (`modules/base.nix`) with a
 hardware file.
 
 Shared modules are located under `modules/`. Host files can import them with
-paths such as `../../modules/common-users.nix`.
+paths such as `../../modules/security.nix`.
 
 ## Quick Template
 
@@ -20,7 +20,6 @@ Example `hosts/my-pc/default.nix`:
   imports = [
     ../../modules/base.nix
     ../../roles/kde.nix
-    ../../modules/common-users.nix
     ./hardware.nix  # generated during install
   ];
   networking.hostName = "my-pc";
@@ -83,6 +82,5 @@ systemd.services.nixos-gc-keep-generations.serviceConfig.ExecStart = lib.mkForce
 ```
 
 ## Users
-Centralized user creation lives in `modules/common-users.nix`. You can
-declare multiple users by setting `machines.users` in a machine file; the
-format matches the NixOS `users.users` attribute set.
+Users are declared with the standard NixOS `users.users` attribute set in the
+host file. There is no shared users module; each host owns its accounts.

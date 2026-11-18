@@ -32,7 +32,6 @@ This directory contains modular NixOS configuration fragments. Each module is op
 - **`xfce.nix`** - XFCE
 
 ### User Configuration
-- **`common-users.nix`** - User account management
 - **`home-manager.nix`** - Home Manager integration
 
 ## Usage

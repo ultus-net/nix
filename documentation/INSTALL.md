@@ -79,7 +79,7 @@ After the first boot:
   - This means no password is set by default
   - Set passwords manually after deployment: `sudo passwd <username>`
   - Alternatively, generate a hashed password with `mkpasswd -m sha-512` and add it to your machine config
-- [ ] Add at least one user SSH public key via `machines.users` (recommended)
+- [ ] Add at least one user SSH public key via `users.users.<name>.openssh.authorizedKeys` (recommended)
 - [ ] Confirm SSH hardening defaults match what you want
 - [ ] Run `sudo nixos-rebuild switch --flake /path/to/nix#<your-host>` (optional)
 

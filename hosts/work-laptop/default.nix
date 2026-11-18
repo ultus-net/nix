@@ -6,7 +6,6 @@
   imports = [
     ../../modules/base.nix
     ../../roles/kde.nix
-    ../../modules/common-users.nix
     ./hardware.nix
   ];
 
@@ -57,7 +56,7 @@
   # ============================================================================
   
   # Primary user configuration - reuse existing hunter user with home-manager
-  machines.users = {
+  users.users = {
     hunter = {
       isNormalUser = true;
       description = "Hunter";

@@ -10,7 +10,6 @@
     ../modules/fonts.nix           # Nerd Fonts and emoji support
     ../modules/home-manager.nix
     ../modules/wallpapers.nix
-    ../modules/pince.nix          # PINCE debugger (built from source)
   ];
 
   # CRITICAL: Placeholder filesystem configuration for flake evaluation.
@@ -30,7 +29,6 @@
   commonPackages.packages = [ pkgs.git pkgs.htop ];
 
   # PINCE debugger
-  pince.enable = true;
 
   # KDE Plasma 6 with sensible defaults
   kde.enable = true;

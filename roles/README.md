@@ -53,7 +53,6 @@ For a complete example, see `hosts/example/default.nix`.
   imports = [
     ../../modules/base.nix
     ../../roles/kde.nix
-    ../../modules/common-users.nix
   ];
   networking.hostName = "my-pc";
   ```

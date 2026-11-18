@@ -31,7 +31,6 @@
   imports = [
     ../../modules/base.nix
     ../../roles/kde.nix
-    ../../modules/common-users.nix
   ];
 
   # Machine-specific identity
@@ -51,7 +50,7 @@
   #
   # Example: a single "primary" user managed by both NixOS (account) and
   # Home Manager (dotfiles, packages, user services).
-  machines.users = {
+  users.users = {
     hunter = {  # CHANGE THIS to your username
       isNormalUser = true;
       description = "Cameron Hunter";  # CHANGE THIS to your name
