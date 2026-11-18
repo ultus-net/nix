@@ -68,11 +68,11 @@ let
   ];
 in
 pkgs.dockerTools.buildLayeredImage {
-  name = "ghcr.io/ultus-net/nixos-base-dev";
+  name = "ghcr.io/ultus-net/nix-dev";
   tag = "latest";
 
   copyToRoot = pkgs.buildEnv {
-    name = "nixos-base-dev-root";
+    name = "nix-dev-root";
     paths = tools ++ accounts;
     pathsToLink = [ "/bin" "/etc" "/share" ];
   };
@@ -95,10 +95,10 @@ pkgs.dockerTools.buildLayeredImage {
       "SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt"
     ];
     Labels = {
-      "org.opencontainers.image.title" = "nixos-base dev image";
+      "org.opencontainers.image.title" = "nix dev image";
       "org.opencontainers.image.description" =
-        "Dev toolchains (Node, Python, Go) and agent CLIs, built from the nixos-base flake";
-      "org.opencontainers.image.source" = "https://github.com/ultus-net/nixos-base";
+        "Dev toolchains (Node, Python, Go) and agent CLIs, built from the nix flake";
+      "org.opencontainers.image.source" = "https://github.com/ultus-net/nix";
       "org.opencontainers.image.licenses" = "MIT";
     };
   };

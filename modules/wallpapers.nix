@@ -56,7 +56,7 @@ let
   # Use the entire assets/wallpapers directory so you can add/remove images
   # without changing the module.
   localWallpapers = pkgs.stdenv.mkDerivation {
-    name = "nixos-base-local-wallpapers";
+    name = "nix-local-wallpapers";
     src = ./../assets/wallpapers;
     buildCommand = ''
       mkdir -p $out/share/backgrounds/nixos

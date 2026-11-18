@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-Common issues and solutions when using nixos-base.
+Common issues and solutions when using nix.
 
 ## Installation Issues
 
@@ -23,7 +23,7 @@ nix-collect-garbage -d
 
 **Solution:**
 ```bash
-sudo nixos-install --flake /mnt/nixos-base#<desktop>-workstation
+sudo nixos-install --flake /mnt/nix#<desktop>-workstation
 ```
 
 ### Flake evaluation fails with "does not provide attribute"
@@ -33,11 +33,11 @@ sudo nixos-install --flake /mnt/nixos-base#<desktop>-workstation
 **Solution:**
 ```bash
 # List available configurations
-nix flake show /mnt/nixos-base
+nix flake show /mnt/nix
 
 # Common typo: missing "-workstation" suffix
-nixos-install --flake /mnt/nixos-base#cosmic-workstation  # Correct
-nixos-install --flake /mnt/nixos-base#cosmic              # Wrong
+nixos-install --flake /mnt/nix#cosmic-workstation  # Correct
+nixos-install --flake /mnt/nix#cosmic              # Wrong
 ```
 
 ## Desktop Environment Issues
@@ -223,7 +223,7 @@ home-manager build
    ```
 3. Fix configuration and reinstall:
    ```bash
-   nixos-install --root /mnt --flake /mnt/nixos-base#<desktop>-workstation
+   nixos-install --root /mnt --flake /mnt/nix#<desktop>-workstation
    ```
 
 ## Getting More Help
@@ -231,7 +231,7 @@ home-manager build
 1. Check NixOS manual: https://nixos.org/manual/nixos/stable/
 2. Search NixOS Discourse: https://discourse.nixos.org/
 3. NixOS Wiki: https://nixos.wiki/
-4. Open an issue: https://github.com/ultus-net/nixos-base/issues
+4. Open an issue: https://github.com/ultus-net/nix/issues
 
 ## Debugging Commands
 

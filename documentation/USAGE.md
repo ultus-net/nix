@@ -27,7 +27,7 @@ cp hosts/example/default.nix hosts/my-machine/default.nix
 3. Clone this repository:
    ```bash
    cd /mnt
-   git clone https://github.com/ultus-net/nixos-base
+   git clone https://github.com/ultus-net/nix
    ```
 4. Generate hardware configuration:
    ```bash
@@ -35,7 +35,7 @@ cp hosts/example/default.nix hosts/my-machine/default.nix
    ```
 5. Install with your chosen desktop:
    ```bash
-   nixos-install --flake /mnt/nixos-base#gnome-workstation
+   nixos-install --flake /mnt/nix#gnome-workstation
    ```
 
 See `INSTALL.md` for detailed installation instructions.

@@ -1,11 +1,11 @@
-# nixos-base overhaul: design
+# nix overhaul: design
 
 Status: draft, after adversarial review round 1
 Date: 2026-11-18
 
 ## Intent
 
-`nixos-base` currently works for its owner but is a poor example of a flake. The
+`nix` currently works for its owner but is a poor example of a flake. The
 dependency direction between profiles and machines is inverted, six desktop
 profiles repeat the same boilerplate, security-relevant defaults are wrong for
 some hosts, CI validates syntax instead of behaviour, and inputs are a year
@@ -227,7 +227,7 @@ removed from `roles/server.nix`.
 
 `modules/auto-update.nix` is deleted. `system.autoUpgrade` is the only updater,
 configured per host, with the flake path an option rather than a hardcoded
-`/home/hunter/Documents/nixos-base`. `nix.gc` stays beside it.
+`/home/hunter/Documents/nix`. `nix.gc` stays beside it.
 
 Open point: none. The owner tracks the remote branch and updates only commits
 that passed CI, so nothing reaches a host without a merged PR. A local
@@ -313,7 +313,7 @@ dependencies present instead of fetching them.
   container. Confinement remains D4.
 - Project mounted at `/workspace`, no host home, uid 1000. Rootless podman maps
   that uid to the operator, so files written to the project stay theirs.
-- Published to `ghcr.io/ultus-net/nixos-base-dev` from `main` only. Pull
+- Published to `ghcr.io/ultus-net/nix-dev` from `main` only. Pull
   requests build the image and skip the push.
 - Rust, C/C++, and a Nix daemon are absent by choice. A project that needs them
   adds one line to `containers/dev/default.nix`.

@@ -25,11 +25,11 @@ permissions:
   packages: write
 
 env:
-  IMAGE: ghcr.io/ultus-net/nixos-base-dev
+  IMAGE: ghcr.io/ultus-net/nix-dev
   # One reference, asserted after load and used for every push. The image's
   # name and tag come from containers/dev/default.nix, so a change there fails
   # the load step instead of silently pushing a stale reference.
-  IMAGE_REF: ghcr.io/ultus-net/nixos-base-dev:latest
+  IMAGE_REF: ghcr.io/ultus-net/nix-dev:latest
 
 jobs:
   build:

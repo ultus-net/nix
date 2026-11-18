@@ -249,7 +249,7 @@ autoUpdate = {
   enable = true;
   interval = "weekly";      # daily, weekly, or monthly
   autoRebuild = false;      # Automatically rebuild after update
-  flakePath = "/home/hunter/Documents/nixos-base";
+  flakePath = "/home/hunter/Documents/nix";
   notifyUser = "hunter";    # Desktop notifications
 };
 ```

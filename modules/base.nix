@@ -161,7 +161,7 @@ EOF
   system.autoUpgrade = {
     enable = lib.mkDefault true;
     dates = "weekly";
-    flake = "/home/hunter/Documents/nixos-base";
+    flake = "/home/hunter/Documents/nix";
     flags = [
       "--update-input" "nixpkgs"
       "--update-input" "home-manager"

@@ -1,6 +1,6 @@
-# nixos-base
+# nix
 
-![Flake validation](https://github.com/ultus-net/nixos-base/actions/workflows/flake-check.yml/badge.svg)
+![Flake validation](https://github.com/ultus-net/nix/actions/workflows/flake-check.yml/badge.svg)
 
 A modular NixOS flake for desktop workstations, servers, and multiple desktop environments.
 
@@ -11,8 +11,8 @@ For a graphical installation, see the [Calamares installation guide](documentati
 For a manual installation:
 ```bash
 # Clone and install during NixOS installation
-cd /mnt && git clone https://github.com/ultus-net/nixos-base
-nixos-install --flake /mnt/nixos-base#gnome-workstation
+cd /mnt && git clone https://github.com/ultus-net/nix
+nixos-install --flake /mnt/nix#gnome-workstation
 ```
 
 After the first boot:

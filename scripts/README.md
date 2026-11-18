@@ -5,7 +5,7 @@ Helper scripts for managing your NixOS system.
 ## Available Scripts
 
 ### `deploy-config.sh`
-Sync your local nixos-base repository to `/etc/nixos` (the system location).
+Sync your local nix repository to `/etc/nixos` (the system location).
 
 **Usage:**
 ```bash
@@ -18,7 +18,7 @@ deploy-cfg
 1. Shows a preview of changes (dry-run)
 2. Asks for confirmation
 3. Creates a timestamped backup of `/etc/nixos`
-4. Syncs `~/Documents/nixos-base/` → `/etc/nixos/`
+4. Syncs `~/Documents/nix/` → `/etc/nixos/`
 5. Shows next steps for rebuilding
 
 **After deployment:**

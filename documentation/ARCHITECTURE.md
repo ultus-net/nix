@@ -5,7 +5,7 @@ This document explains the repository structure and design decisions.
 ## Repository Layout
 
 ```
-nixos-base/
+nix/
 ├── flake.nix              # Main flake defining all configurations
 ├── modules/               # Reusable NixOS modules
 ├── roles/                 # Desktop environment roles

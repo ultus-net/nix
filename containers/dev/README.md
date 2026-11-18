@@ -2,7 +2,7 @@
 
 A container image with the toolchains this repo's projects use, built from the
 flake's pinned nixpkgs. Published to
-`ghcr.io/ultus-net/nixos-base-dev`.
+`ghcr.io/ultus-net/nix-dev`.
 
 It is a **toolchain image, not a security boundary**. It has full network
 access, and it runs as an ordinary container. Confining an agent is the job of
@@ -28,14 +28,14 @@ nix build .#dev-image
 docker load < result
 ```
 
-The image is `ghcr.io/ultus-net/nixos-base-dev:latest`.
+The image is `ghcr.io/ultus-net/nix-dev:latest`.
 
 ## Run
 
 Mount the project only. Nothing from the host home is visible.
 
 ```bash
-podman run --rm -it -v "$PWD:/workspace" ghcr.io/ultus-net/nixos-base-dev:latest
+podman run --rm -it -v "$PWD:/workspace" ghcr.io/ultus-net/nix-dev:latest
 ```
 
 Use rootless podman: the container runs as uid 1000, which rootless podman maps

@@ -1,4 +1,4 @@
-# Contributing to nixos-base
+# Contributing to nix
 
 Thank you for your interest in improving this NixOS starter repository!
 

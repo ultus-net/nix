@@ -52,7 +52,7 @@ The "hunter" username is just an example. To use your own:
 
 **No!** For your first installation, use the pre-built profiles directly:
 ```bash
-nixos-install --flake /mnt/nixos-base#gnome-workstation
+nixos-install --flake /mnt/nix#gnome-workstation
 ```
 
 Create custom machine configs later when you want to:
@@ -255,7 +255,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for complete guidelines. The basic steps:
 
 Yes! Use the `base-server` profile for headless systems:
 ```bash
-nixos-install --flake /mnt/nixos-base#base-server
+nixos-install --flake /mnt/nix#base-server
 ```
 
 Then customize by creating a machine config and importing only the modules you need.

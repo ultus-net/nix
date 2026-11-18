@@ -110,7 +110,7 @@ This flake provides **6 desktop environments** plus a **headless base profile**:
 
 Install any desktop with:
 ```bash
-nixos-install --flake /mnt/nixos-base#<profile>
+nixos-install --flake /mnt/nix#<profile>
 ```
 
 See `roles/README.md` for detailed desktop environment documentation.

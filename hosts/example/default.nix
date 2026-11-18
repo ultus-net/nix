@@ -13,7 +13,7 @@
   #
   # WHEN NOT TO USE THIS:
   # - First time installation: install a host directly, for example:
-  #   nixos-install --flake /mnt/nixos-base#tower
+  #   nixos-install --flake /mnt/nix#tower
   # - Just testing desktops: switch the role a host imports, then rebuild:
   #   sudo nixos-rebuild switch --flake .#tower
   #
@@ -90,7 +90,7 @@
   #   nixos-generate-config --root /mnt
   #
   # This creates /mnt/etc/nixos/hardware-configuration.nix
-  # Copy it to your nixos-base directory as hosts/<name>/hardware.nix and
+  # Copy it to your nix directory as hosts/<name>/hardware.nix and
   # uncomment the line below:
   #
   # imports = [

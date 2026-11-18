@@ -58,7 +58,7 @@
       in {
         # A developer shell with common tools similar to Universal Blue QoL
         devShells.default = pkgs.devshell.mkShell {
-          name = "nixos-base";
+          name = "nix";
           packages = with pkgs; [
             # shells & core
             bashInteractive

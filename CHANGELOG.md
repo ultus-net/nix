@@ -6,11 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Repository renamed from `nixos-base` to `nix`: GitHub URL, ghcr image
+  (`ghcr.io/ultus-net/nix-dev`), clone paths in docs, and the `system.autoUpgrade`
+  flake path, which is now `/home/hunter/Documents/nix`. **Action on each host:**
+  rename the checkout directory to match before the next auto-upgrade, or point
+  `flake` at wherever the checkout lives.
+
 ### Added
 
 - `dev-image` flake output and `containers/dev`: an OCI toolchain image with
   Node, Python, Go, and agent CLIs, built from the flake's nixpkgs. CI publishes
-  it to `ghcr.io/ultus-net/nixos-base-dev`.
+  it to `ghcr.io/ultus-net/nix-dev`.
 
 ### Added - Performance Optimizations (January 2026)
 

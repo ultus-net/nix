@@ -58,7 +58,7 @@ sudo mv /mnt/etc/nixos /mnt/etc/nixos.backup
 
 # Clone your config
 cd /mnt/etc
-sudo git clone https://github.com/ultus-net/nixos-base.git nixos
+sudo git clone https://github.com/ultus-net/nix.git nixos
 
 # Copy the hardware config that Calamares generated
 sudo cp /mnt/etc/nixos.backup/hardware-configuration.nix /mnt/etc/nixos/hosts/tower/hardware.nix
@@ -97,19 +97,19 @@ If you prefer to boot into the Calamares system first:
 ```bash
 # Clone your config
 cd ~
-git clone https://github.com/ultus-net/nixos-base.git
+git clone https://github.com/ultus-net/nix.git
 
 # Backup Calamares config
 sudo mv /etc/nixos /etc/nixos.backup
 
 # Link your config
-sudo ln -s ~/nixos-base /etc/nixos
+sudo ln -s ~/nix /etc/nixos
 
 # Copy hardware config
 sudo cp /etc/nixos.backup/hardware-configuration.nix /etc/nixos/hosts/tower/hardware.nix
 
 # Edit tower.nix to match your username
-nano ~/nixos-base/hosts/tower/default.nix
+nano ~/nix/hosts/tower/default.nix
 # Change ALL instances of "hunter" to YOUR username
 
 # Apply your config
@@ -143,7 +143,7 @@ Make sure you updated the username in `tower.nix`:
 whoami
 
 # Edit tower.nix and change "hunter" to your username
-nano ~/nixos-base/hosts/tower/default.nix
+nano ~/nix/hosts/tower/default.nix
 ```
 
 Look for these sections and update:
@@ -170,7 +170,7 @@ Don't replace the config entirely. Instead:
 ```nix
 imports = [
   ./hardware.nix
-  ~/nixos-base/roles/cosmic.nix
+  ~/nix/roles/cosmic.nix
 ];
 ```
 
