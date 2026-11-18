@@ -295,6 +295,23 @@ change that adds the file. A CI check greps for `initialHashedPassword` outside
 mount, the SDDM kscreen symlink, the Flatpak overrides and the NVIDIA setup all
 carry over in behaviour. Each moves with its options intact, not rewritten.
 
+### D12. Dev image: toolchains in OCI, not a second boundary
+
+A `dev-image` flake output carries the toolchains these projects use (Node and
+TypeScript, Python, Go) plus the three agent CLIs, so a session starts with its
+dependencies present instead of fetching them.
+
+- Built by `dockerTools.buildLayeredImage` from the flake's pinned nixpkgs.
+  No Dockerfile, so packages cannot drift from the host set.
+- It claims no confinement. Network is open and the container is an ordinary
+  container. Confinement remains D4.
+- Project mounted at `/workspace`, no host home, uid 1000. Rootless podman maps
+  that uid to the operator, so files written to the project stay theirs.
+- Published to `ghcr.io/ultus-net/nixos-base-dev` from `main` only. Pull
+  requests build the image and skip the push.
+- Rust, C/C++, and a Nix daemon are absent by choice. A project that needs them
+  adds one line to `containers/dev/default.nix`.
+
 ## Migration order
 
 Every commit keeps CI green, so a bisect stays useful.
@@ -318,6 +335,9 @@ Every commit keeps CI green, so a bisect stays useful.
 10. `feat(agent-sandbox): per-session nspawn sandbox` — module, launcher, proxy,
     docs.
 11. `docs: rewrite documentation for the new tree`.
+12. `feat(containers): dev image built from the flake` — `containers/dev`, the
+    `dev-image` output, and the ghcr workflow. Independent of 1 to 11; it
+    touches no host and can land in any order.
 
 ## Acceptance checks
 
@@ -335,6 +355,8 @@ Every commit keeps CI green, so a bisect stays useful.
   - Starting twice concurrently gives two isolated units.
 - `agent-sandbox` resolves from `/run/current-system/sw/bin`, not from the
   project.
+- `nix build .#dev-image` succeeds, and the image runs `node --version`,
+  `uv --version`, `go version`, and one agent CLI without extra setup.
 - `./scripts/switch-desktop.sh hyprland` rebuilds a working session on tower.
 - `git grep -n 'initialHashedPassword' -- ':!hosts/example'` is empty.
 - `main` requires the CI check and a PR, and head branches auto-delete.
