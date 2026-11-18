@@ -48,7 +48,6 @@ let
     name = "agent-sandbox";
     runtimeInputs = [
       pkgs.coreutils
-      pkgs.gawk
       pkgs.systemd
     ];
     text = fill {

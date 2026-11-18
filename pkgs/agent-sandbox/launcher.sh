@@ -25,7 +25,8 @@ need_root() {
 }
 
 caller_uid() {
-  local uid="${SUDO_UID:-}"
+  local uid
+  uid="${SUDO_UID:-}"
   case "$uid" in
     '' | *[!0-9]*) die 'SUDO_UID is unset or not numeric; start through sudo' ;;
   esac
@@ -37,9 +38,13 @@ cmd_run() {
   [ "$#" -ge 1 ] || die "$USAGE"
 
   local project
-  project="$(realpath -e -- "$1")" || die "no such directory: $1"
+  if ! project="$(realpath -e -- "$1")"; then
+    die "no such directory: $1"
+  fi
   shift
-  [ "${1:-}" = '--' ] && shift
+  if [ "${1:-}" = '--' ]; then
+    shift
+  fi
   [ -d "$project" ] || die "not a directory: $project"
   [ "$project" != '/' ] || die 'refusing to mount the host root'
   case "$project" in
@@ -74,18 +79,19 @@ cmd_run() {
 
 cmd_list() {
   need_root
-  @@MACHINECTL@@ list --no-legend --no-pager | awk '$1 ~ /^agent-/'
+  @@MACHINECTL@@ list --no-legend --no-pager | grep '^agent-' || true
 }
 
 cmd_stop() {
   need_root
-  local target="${1:-}"
+  local target
+  target="${1:-}"
   [ -n "$target" ] || die "$USAGE"
 
   if [ "$target" = '--all' ]; then
     local sessions
     mapfile -t sessions < <(@@MACHINECTL@@ list --no-legend --no-pager |
-      awk '$1 ~ /^agent-/ { print $1 }')
+      grep '^agent-' | cut -d' ' -f1)
     [ "${#sessions[@]}" -gt 0 ] || {
       printf 'agent-sandbox: no sessions\n'
       return 0
