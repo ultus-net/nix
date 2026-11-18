@@ -14,7 +14,7 @@ nix build .#nixosConfigurations.cosmic-workstation.config.system.build.vm
 ./result/bin/run-*-vm
 
 # Create custom machine config (advanced)
-cp machines/example-machine.nix machines/my-machine.nix
+cp hosts/example/default.nix hosts/my-machine/default.nix
 # Edit my-machine.nix, then reference it in flake.nix
 ```
 
@@ -113,17 +113,17 @@ See `scripts/README.md` for complete script documentation.
 
 1. Copy the example machine template:
    ```bash
-   cp machines/example-machine.nix machines/my-machine.nix
+   cp hosts/example/default.nix hosts/my-machine/default.nix
    ```
 
-2. Edit `machines/my-machine.nix`:
+2. Edit `hosts/my-machine/default.nix`:
    ```nix
    { config, pkgs, lib, inputs, ... }:
    {
      imports = [
-       ./configuration.nix           # Base machine config
+       ../../modules/base.nix        # Shared defaults
        ./hardware-configuration.nix  # Your hardware config
-       ../profiles/gnome.nix         # Choose your desktop
+       ../../roles/gnome.nix         # Choose your desktop
      ];
 
      # Set your hostname
@@ -144,7 +144,7 @@ See `scripts/README.md` for complete script documentation.
    ```nix
    nixosConfigurations = {
      # ... existing configs ...
-     my-machine = mkSystem ./machines/my-machine.nix;
+     my-machine = mkSystem ./hosts/my-machine/default.nix;
    };
    ```
 
@@ -153,7 +153,7 @@ See `scripts/README.md` for complete script documentation.
    sudo nixos-rebuild switch --flake .#my-machine
    ```
 
-See `machines/README.md` for detailed machine configuration guide.
+See `hosts/README.md` for detailed machine configuration guide.
 
 ## Enabling Optional Modules
 

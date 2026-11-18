@@ -113,7 +113,7 @@ nmtui
 **Problem:** SSH not enabled or firewall blocking.
 
 **Solution:**
-In `machines/configuration.nix`, SSH is enabled by default but verify:
+In `modules/base.nix`, SSH is enabled by default but verify:
 ```nix
 services.openssh.enable = true;
 networking.firewall.allowedTCPPorts = [ 22 ];

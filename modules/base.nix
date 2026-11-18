@@ -1,10 +1,10 @@
 /*
-  Master machine configuration for `machines/`.
+  Shared machine defaults for `hosts/`.
 
   This file contains generic, installer-friendly defaults for machine
   deployments (locale, network manager/DHCP, zram, redistributable firmware,
-  etc.). Machine entries in `machines/` should import this and then add
-  device-specific settings (hostname, users, hardware-configuration.nix).
+  etc.). Host entries under `hosts/<name>/` should import this and then add
+  device-specific settings (hostname, users, hardware).
 */
 
 { config, pkgs, lib, ... }:
@@ -137,7 +137,7 @@ EOF
   # The zram module uses machines.zram.* options (see modules/zram.nix).
 
   # Import shared, reusable modules from `modules/`.
-  imports = [ ../modules/zram.nix ];
+  imports = [ ./zram.nix ];
 
   # Snapshot + GC retention:
   # - Keep 3 system generations (rollback points)

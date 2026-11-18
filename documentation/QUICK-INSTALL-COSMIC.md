@@ -162,7 +162,7 @@ sudo nixos-generate-config --root /mnt
 This creates `/mnt/etc/nixos/hardware-configuration.nix`. We need to copy it:
 
 ```bash
-sudo cp /mnt/etc/nixos/hardware-configuration.nix /mnt/nixos-base/machines/hardware-configuration.nix
+sudo cp /mnt/etc/nixos/hardware-configuration.nix /mnt/nixos-base/hosts/hardware-configuration.nix
 ```
 
 ---
@@ -223,13 +223,13 @@ The hardware config needs to be added after first boot. For now, the install wil
 Copy the generated hardware config:
 
 ```bash
-sudo cp /mnt/etc/nixos/hardware-configuration.nix /mnt/nixos-base/machines/hardware-configuration.nix
+sudo cp /mnt/etc/nixos/hardware-configuration.nix /mnt/nixos-base/hosts/hardware-configuration.nix
 ```
 
 You can also verify the tower.nix configuration:
 
 ```bash
-cat /mnt/nixos-base/machines/tower.nix
+cat /mnt/nixos-base/hosts/tower/default.nix
 ```
 
 ---
@@ -288,7 +288,7 @@ su - hunter
 ### D. (Optional) Add your SSH key
 If you want SSH access, edit the config:
 ```bash
-sudo nano /etc/nixos/machines/tower.nix
+sudo nano /etc/nixos/hosts/tower/default.nix
 ```
 
 Find this section:
@@ -491,9 +491,9 @@ sudo nix-collect-garbage -d
 
 ## Post-Install: Customize Your System
 
-1. **Change username**: Edit `/etc/nixos/machines/tower.nix` and change all instances of "hunter"
+1. **Change username**: Edit `/etc/nixos/hosts/tower/default.nix` and change all instances of "hunter"
 2. **Add packages**: Add to `environment.systemPackages` in tower.nix
-3. **Switch desktops**: Change `../profiles/cosmic.nix` to gnome/kde/xfce/etc.
+3. **Switch desktops**: Change `../roles/cosmic.nix` to gnome/kde/xfce/etc.
 4. **Disable features**: Set `gaming.enable = false;` (or multimedia, virtualization, etc.)
 
 After any changes:

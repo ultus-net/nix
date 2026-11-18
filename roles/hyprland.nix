@@ -1,13 +1,17 @@
-{ config, pkgs, lib, inputs, ... }:
+{ config, pkgs, lib, ... }:
 {
-  # GNOME desktop/profile. Machine-specific details (hostname, users,
-  # hardware mounts) belong in `machines/` entries that import this file.
+  # Hyprland desktop profile (Omarchy-style, opinionated)
+  #
+  # This profile enables the Hyprland desktop environment with Omarchy-inspired modular config.
+  #
+  # NOTE: This requires hyprland.nix to be present in the workspace.
+
   imports = [
-    ../machines/configuration.nix  # Import base machine config for boot/system defaults
+    ../modules/base.nix
     ../modules/common-packages.nix
-    ../modules/gnome.nix
     ../modules/home-manager.nix
     ../modules/wallpapers.nix
+    ../modules/hyprland.nix
   ];
 
   # CRITICAL: Placeholder filesystem configuration for flake evaluation.
@@ -23,11 +27,17 @@
     fsType = "vfat";
   };
 
-  commonPackages.enable = true;
-  commonPackages.packages = [ pkgs.git pkgs.curl ];
 
-  gnome.enable = true;
-  
+  # Enable Hyprland desktop
+  hyprland.enable = true;
+
+  # Ensure zsh is enabled if set as default shell
+  programs.zsh.enable = true;
+
   # Enable NixOS wallpaper collection by default
   machines.wallpapers.enable = lib.mkDefault true;
+
+  # Example: add common packages
+  commonPackages.enable = true;
+  commonPackages.packages = [ pkgs.git pkgs.curl ];
 }

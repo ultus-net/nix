@@ -1,10 +1,10 @@
 { config, pkgs, lib, inputs, ... }:
 {
-  # Xfce desktop profile
+  # Cinnamon desktop profile
   imports = [
-    ../machines/configuration.nix
+    ../modules/base.nix
     ../modules/common-packages.nix
-    ../modules/xfce.nix
+    ../modules/cinnamon.nix
     ../modules/home-manager.nix
     ../modules/wallpapers.nix
   ];
@@ -25,7 +25,7 @@
   commonPackages.enable = true;
   commonPackages.packages = [ pkgs.git pkgs.curl ];
 
-  xfce.enable = true;
+  cinnamon.enable = true;
   
   # Enable NixOS wallpaper collection by default
   machines.wallpapers.enable = lib.mkDefault true;

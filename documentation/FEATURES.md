@@ -113,7 +113,7 @@ Install any desktop with:
 nixos-install --flake /mnt/nixos-base#<profile>
 ```
 
-See `profiles/README.md` for detailed desktop environment documentation.
+See `roles/README.md` for detailed desktop environment documentation.
 
 ## Optional Modules
 

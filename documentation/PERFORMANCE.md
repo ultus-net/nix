@@ -16,7 +16,7 @@ The tower configuration includes comprehensive performance tuning targeting:
 ### 1. Memory & Swap Management
 
 #### zram Compression Swap
-**Location**: `machines/tower.nix`
+**Location**: `hosts/tower/default.nix`
 
 ```nix
 machines.zram.enableAutoSize = true;
@@ -44,7 +44,7 @@ Swapfile reduced from 32GB to 16GB since zram handles primary swapping.
 ### 2. CPU & Process Management
 
 #### Performance CPU Governor
-**Location**: `machines/tower.nix`
+**Location**: `hosts/tower/default.nix`
 
 ```nix
 powerManagement.cpuFreqGovernor = "performance";
@@ -66,7 +66,7 @@ cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
 **Alternative**: Use "schedutil" for balance between performance and power efficiency.
 
 #### Gamemode Integration
-**Location**: `machines/tower.nix`
+**Location**: `hosts/tower/default.nix`
 
 ```nix
 programs.gamemode = {
@@ -98,7 +98,7 @@ gamemoded -s
 ### 3. Kernel Optimizations
 
 #### Low-Latency Kernel Parameters
-**Location**: `machines/tower.nix`
+**Location**: `hosts/tower/default.nix`
 
 ```nix
 boot.kernelParams = [
@@ -127,7 +127,7 @@ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 ```
 
 #### System Tuning (sysctl)
-**Location**: `machines/tower.nix`
+**Location**: `hosts/tower/default.nix`
 
 ```nix
 boot.kernel.sysctl = {
@@ -148,7 +148,7 @@ boot.kernel.sysctl = {
 ### 4. Storage & I/O Optimization
 
 #### NVMe Kyber Scheduler
-**Location**: `machines/tower.nix` (udev rules)
+**Location**: `hosts/tower/default.nix` (udev rules)
 
 ```bash
 # NVMe drives use kyber (best for gaming/random I/O)
@@ -169,7 +169,7 @@ cat /sys/block/sda/queue/scheduler      # Should show [mq-deadline]
 ```
 
 #### SSD-Optimized Mount Options
-**Location**: `machines/tower.nix`
+**Location**: `hosts/tower/default.nix`
 
 All filesystems now use:
 ```nix
@@ -187,7 +187,7 @@ options = [ "noatime" "nodiratime" "discard=async" "commit=60" ];
 ### 5. Boot Speed Optimizations
 
 #### tmpfs for /tmp
-**Location**: `machines/tower.nix`
+**Location**: `hosts/tower/default.nix`
 
 ```nix
 boot.tmp.useTmpfs = true;
@@ -250,7 +250,7 @@ SDL_VIDEODRIVER = "wayland";
 ### 7. Network Performance
 
 #### TCP BBR Congestion Control
-**Location**: `machines/tower.nix`
+**Location**: `hosts/tower/default.nix`
 
 ```nix
 boot.kernel.sysctl = {
@@ -354,7 +354,7 @@ If you need to revert specific optimizations:
 
 ### Conservative Mode (Keep Security Mitigations)
 
-Remove from `machines/tower.nix`:
+Remove from `hosts/tower/default.nix`:
 ```nix
 # Comment out or remove:
 # "mitigations=off"

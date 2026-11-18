@@ -57,16 +57,16 @@ If you just want a working machine quickly, here's the minimal checklist:
 - [ ] Partition + mount your target disk at `/mnt`
 - [ ] Clone this repo into `/mnt/nixos-base`
 - [ ] Generate hardware config: `nixos-generate-config --root /mnt`
-- [ ] Create a machine file by copying `machines/example-machine.nix` to
-  `machines/<your-hostname>.nix`
+- [ ] Create a machine file by copying `hosts/example/default.nix` to
+  `hosts/<your-hostname>/default.nix`
 - [ ] In your new machine file:
   - set `networking.hostName`
   - import the generated `hardware-configuration.nix`
-  - pick a profile by importing one of:
-    - `../profiles/cosmic.nix`
-    - `../profiles/gnome.nix`
-    - `../profiles/kde.nix`
-    - etc. (see profiles/ folder for all options)
+  - pick a role by importing one of:
+    - `../../roles/cosmic.nix`
+    - `../../roles/gnome.nix`
+    - `../../roles/kde.nix`
+    - etc. (see roles/ folder for all options)
 - [ ] Install:
   - `nixos-install --root /mnt --flake /mnt/nixos-base#<desktop>-workstation`
 - [ ] Reboot
@@ -205,7 +205,7 @@ When using LUKS you must ensure your NixOS configuration contains the
 appropriate `boot.initrd.luks.devices` and `fileSystems` entries so the system
 can unlock the root on boot. If you're not comfortable editing the flake
 directly, you can `nixos-generate-config --root /mnt` and adapt the generated
-configuration file (for example `machines/configuration.nix`) before running
+configuration file (for example `modules/base.nix`) before running
 `nixos-install`.
 
 6) Post-install: reboot and verify
@@ -247,7 +247,7 @@ Run through this checklist to ensure everything works:
 
 To avoid passing experimental flags manually each time, add the following to
 your NixOS configuration (for example the flake's machine module or
-`machines/configuration.nix`):
+`modules/base.nix`):
 
 ```nix
 nix.extraOptions = ''

@@ -339,29 +339,29 @@
           };
         in {
           # Headless/Server base configuration (no desktop environment)
-          base-server = mkSystem ./profiles/base.nix;
+          base-server = mkSystem ./roles/base.nix;
           
           # Real machine configurations
-          tower = mkSystem ./machines/tower.nix;
-          work-laptop = mkSystem ./machines/work-laptop.nix;
+          tower = mkSystem ./hosts/tower/default.nix;
+          work-laptop = mkSystem ./hosts/work-laptop/default.nix;
           
           # Real COSMIC desktop (System76) - Wayland, Rust-based
-          cosmic-workstation = mkSystem ./profiles/cosmic.nix;
+          cosmic-workstation = mkSystem ./roles/cosmic.nix;
           
           # GNOME - Modern GNOME Shell desktop
-          gnome-workstation = mkSystem ./profiles/gnome.nix;
+          gnome-workstation = mkSystem ./roles/gnome.nix;
           
           # KDE Plasma 6 - Feature-rich Qt desktop
-          kde-workstation = mkSystem ./profiles/kde.nix;
+          kde-workstation = mkSystem ./roles/kde.nix;
           
           # Cinnamon - Linux Mint's flagship desktop
-          cinnamon-workstation = mkSystem ./profiles/cinnamon.nix;
+          cinnamon-workstation = mkSystem ./roles/cinnamon.nix;
           
           # XFCE - Lightweight, traditional desktop
-          xfce-workstation = mkSystem ./profiles/xfce.nix;
+          xfce-workstation = mkSystem ./roles/xfce.nix;
 
           # Hyprland - Omarchy-style Wayland desktop
-          hyprland-workstation = mkSystem ./profiles/hyprland.nix;
+          hyprland-workstation = mkSystem ./roles/hyprland.nix;
         };
 
       # Out-of-system content like templates

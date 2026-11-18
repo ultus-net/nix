@@ -1,9 +1,9 @@
 { config, pkgs, lib, inputs, ... }:
 {
-  # KDE/Plasma 6 desktop profile. Keep machine specifics in `machines/`.
+  # KDE/Plasma 6 desktop role. Keep host specifics in `hosts/`.
   # This profile provides a modern Wayland-based desktop with SDDM display manager.
   imports = [
-    ../machines/configuration.nix  # Import base machine config for boot/system defaults
+    ../modules/base.nix  # Import base machine config for boot/system defaults
     ../modules/common-packages.nix
     ../modules/kde.nix
     ../modules/audio.nix           # PipeWire audio stack

@@ -35,12 +35,12 @@ To add a new desktop environment to this repository:
    }
    ```
 
-2. **Create a profile** in `profiles/<desktop>.nix`:
+2. **Create a role** in `roles/<desktop>.nix`:
    ```nix
    { config, pkgs, lib, inputs, ... }:
    {
      imports = [
-       ../machines/configuration.nix
+       ../modules/base.nix
        ../modules/common-packages.nix
        ../modules/<desktop>.nix
        ../modules/home-manager.nix
@@ -65,13 +65,13 @@ To add a new desktop environment to this repository:
    ```nix
    nixosConfigurations = {
      # ... existing configs
-     <desktop>-workstation = mkSystem ./profiles/<desktop>.nix;
+     <desktop>-workstation = mkSystem ./roles/<desktop>.nix;
    };
    ```
 
 4. **Update documentation**:
    - Add entry to `README.md` desktop table
-   - Add section to `profiles/README.md`
+   - Add section to `roles/README.md`
    - Update CI workflow in `.github/workflows/flake-check.yml`
 
 5. **Test your changes**:

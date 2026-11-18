@@ -20,7 +20,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate profiles & machines import Home Manager
+      - name: Validate roles & hosts import Home Manager
         run: bash ./scripts/validate-hosts-home-manager.sh
 
       - name: Check layering
@@ -222,9 +222,9 @@ jobs:
 
       - name: Verify modules are used in configurations
         run: |
-          echo "Checking that modules are referenced in profiles..."
+          echo "Checking that modules are referenced in roles..."
           # This validates that our modules are actually being used
-          for profile in profiles/*.nix; do
+          for profile in roles/*.nix; do
             echo "  Checking imports in $profile"
             grep -q "imports\s*=" "$profile" || echo "    Warning: $profile has no imports"
           done

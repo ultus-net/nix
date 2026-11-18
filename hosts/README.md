@@ -1,28 +1,29 @@
-# Machines
+# Hosts
 
 ## Purpose
-This directory contains machine deployment entries and a master machine
-configuration (`machines/configuration.nix`). Machine files should compose the
-master defaults with a `profiles/<profile>.nix` entry and, when installing,
-an installer-generated `hardware-configuration.nix`.
+This directory holds one directory per machine, each with a `default.nix`
+entry point. A host composes the shared defaults (`modules/base.nix`) with a
+`roles/<name>.nix` entry and, when installing, an installer-generated
+hardware file.
 
-Shared modules are located under `modules/`. Machine files can import them with
-paths such as `../modules/common-users.nix` and `../modules/zram.nix`.
+Shared modules are located under `modules/`. Host files can import them with
+paths such as `../../modules/common-users.nix`.
 
 ## Quick Template
 
-Example `machines/my-pc.nix`:
+Example `hosts/my-pc/default.nix`:
 
 ```nix
 { config, pkgs, lib, ... }:
 {
-  # Import the machine master defaults (./configuration.nix), the chosen
-  # desktop profile (../profiles/cosmic.nix), and the shared users module
-  # (../modules/common-users.nix).
-  imports = [ ./configuration.nix ../profiles/cosmic.nix ../modules/common-users.nix ];
+  # Shared defaults, the chosen role, and the shared users module.
+  imports = [
+    ../../modules/base.nix
+    ../../roles/cosmic.nix
+    ../../modules/common-users.nix
+    ./hardware-configuration.nix  # generated during install
+  ];
   networking.hostName = "my-pc";
-  # Import hardware-configuration.nix generated during install:
-  # imports = [ ./configuration.nix ../profiles/cosmic.nix ./hardware-configuration.nix ];
 }
 ```
 
@@ -33,7 +34,7 @@ options. By default zram size is computed as min(total RAM / 2,
 or disable the heuristic with `machines.zram.enableAutoSize = false`.
 
 ## GC and Generation Retention
-The machine master config (`machines/configuration.nix`) includes a weekly
+The machine master config (`modules/base.nix`) includes a weekly
 systemd timer that:
 
 - keeps the last **3** system generations

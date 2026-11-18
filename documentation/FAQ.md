@@ -42,7 +42,7 @@ Alternatively, add SSH keys to your user config before installation.
 The "hunter" username is just an example. To use your own:
 
 1. Copy `home/hunter.nix` to `home/yourusername.nix`
-2. Edit `machines/example-machine.nix` (or your machine config):
+2. Edit `hosts/example/default.nix` (or your machine config):
    - Change `machines.users.hunter` to `machines.users.yourusername`
    - Change `home-manager.users.hunter` to `home-manager.users.yourusername`
 3. Update the import: `home-manager.users.yourusername = import ../home/yourusername.nix;`
@@ -190,7 +190,7 @@ This configuration enables flakes by default, but if you see this error:
 nix --extra-experimental-features 'nix-command flakes' <your-command>
 ```
 
-**Permanent fix:** Ensure `machines/configuration.nix` has:
+**Permanent fix:** Ensure `modules/base.nix` has:
 ```nix
 nix.settings.experimental-features = [ "nix-command" "flakes" ];
 ```
@@ -246,7 +246,7 @@ See [home/README.md](../home/README.md) for details.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for complete guidelines. The basic steps:
 1. Create `modules/yourdesktop.nix`
-2. Create `profiles/yourdesktop.nix`
+2. Create `roles/yourdesktop.nix`
 3. Add to `flake.nix` nixosConfigurations
 4. Update documentation
 5. Submit a pull request

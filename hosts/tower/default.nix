@@ -3,29 +3,29 @@
   # Tower - Main home workstation with full feature set
 
   imports = [
-    ./configuration.nix
-    ./hardware-configuration.nix
+    ../../modules/base.nix
+    ../hardware-configuration.nix
 
     # Desktop environment - Switched to KDE for stability
-    ../profiles/kde.nix
+    ../../roles/kde.nix
 
     # User management
-    ../modules/common-users.nix
+    ../../modules/common-users.nix
 
     # Hardware modules
-    ../modules/nvidia.nix
+    ../../modules/nvidia.nix
 
     # Security module can now be safely imported with KDE
-    ../modules/security.nix
+    ../../modules/security.nix
 
     # All optional feature modules
-    ../modules/gaming.nix
-    ../modules/multimedia.nix
-    ../modules/virtualization.nix
-    ../modules/containers.nix
-    ../modules/auto-update.nix
-    ../modules/deploy-config.nix
-    # NOTE: zram.nix is already imported via configuration.nix
+    ../../modules/gaming.nix
+    ../../modules/multimedia.nix
+    ../../modules/virtualization.nix
+    ../../modules/containers.nix
+    ../../modules/auto-update.nix
+    ../../modules/deploy-config.nix
+    # NOTE: zram.nix is already imported via modules/base.nix
   ];
 
   # Machine identity
@@ -104,7 +104,7 @@
   };
 
   # Home Manager configuration
-  home-manager.users.hunter = import ../home/hunter.nix;
+  home-manager.users.hunter = import ../../home/hunter.nix;
 
   # Create user group
   users.groups.hunter = {};

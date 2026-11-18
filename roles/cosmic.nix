@@ -9,7 +9,7 @@
   # Binary cache: https://cosmic.cachix.org/
   
   imports = [
-    ../machines/configuration.nix
+    ../modules/base.nix
     ../modules/common-packages.nix
     ../modules/pince.nix          # PINCE debugger (built from source)
     ../modules/cosmic.nix

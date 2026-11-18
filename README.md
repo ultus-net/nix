@@ -52,8 +52,8 @@ Switch desktops anytime: `./scripts/switch-desktop.sh cosmic`
 
 ### Module Docs
 - [modules/](modules/README.md) - Audio, gaming, virtualization, etc.
-- [profiles/](profiles/README.md) - Desktop environment profiles
-- [machines/](machines/README.md) - Machine configuration guide
+- [roles/](roles/README.md) - Desktop environment roles
+- [hosts/](hosts/README.md) - Machine configuration guide
 - [home/](home/README.md) - Home Manager setup
 - [scripts/](scripts/README.md) - Helper scripts
 

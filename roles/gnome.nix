@@ -1,17 +1,18 @@
 { config, pkgs, lib, inputs, ... }:
 {
-  # Cinnamon desktop profile
+  # GNOME desktop role. Machine-specific details (hostname, users,
+  # hardware mounts) belong in `hosts/` entries that import this file.
   imports = [
-    ../machines/configuration.nix
+    ../modules/base.nix  # Import base machine config for boot/system defaults
     ../modules/common-packages.nix
-    ../modules/cinnamon.nix
+    ../modules/gnome.nix
     ../modules/home-manager.nix
     ../modules/wallpapers.nix
   ];
 
   # CRITICAL: Placeholder filesystem configuration for flake evaluation.
   # For real installations, you MUST replace these with your actual disk
-  # configuration from nixos-generate-config --root /mnt. See INSTALL.md.
+  # configuration from `nixos-generate-config --root /mnt`. See INSTALL.md.
   fileSystems."/" = lib.mkDefault {
     device = "/dev/disk/by-label/nixos-root";
     fsType = "ext4";
@@ -25,7 +26,7 @@
   commonPackages.enable = true;
   commonPackages.packages = [ pkgs.git pkgs.curl ];
 
-  cinnamon.enable = true;
+  gnome.enable = true;
   
   # Enable NixOS wallpaper collection by default
   machines.wallpapers.enable = lib.mkDefault true;

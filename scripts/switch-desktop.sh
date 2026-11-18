@@ -41,7 +41,7 @@ if [[ ! " ${DESKTOPS[@]} " =~ " ${DESKTOP} " ]]; then
   show_usage
 fi
 
-PROFILE_PATH="$REPO_ROOT/profiles/${DESKTOP}.nix"
+PROFILE_PATH="$REPO_ROOT/roles/${DESKTOP}.nix"
 
 if [ ! -f "$PROFILE_PATH" ]; then
   echo "Error: Profile not found at $PROFILE_PATH"

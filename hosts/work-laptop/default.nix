@@ -4,9 +4,9 @@
   # Hardware configuration generated from nixos-generate-config
 
   imports = [
-    ./configuration.nix
-    ../profiles/cosmic.nix
-    ../modules/common-users.nix
+    ../../modules/base.nix
+    ../../roles/cosmic.nix
+    ../../modules/common-users.nix
   ];
 
   # ============================================================================
@@ -120,7 +120,7 @@
   };
 
   # Home Manager configuration - reusing hunter.nix
-  home-manager.users.hunter = import ../home/hunter.nix;
+  home-manager.users.hunter = import ../../home/hunter.nix;
 
   # Create user group
   users.groups.hunter = {};

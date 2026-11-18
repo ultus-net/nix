@@ -10,10 +10,10 @@
   # - Network infrastructure (routers, firewalls)
   #
   # Machine-specific details (hostname, users, hardware configuration) belong
-  # in `machines/` entries that import this profile.
+  # in `hosts/` entries that import this role.
 
   imports = [
-    ../machines/configuration.nix  # Base machine config (boot, locale, SSH, etc.)
+    ../modules/base.nix  # Base machine config (boot, locale, SSH, etc.)
     ../modules/common-packages.nix # Essential CLI tools
     ../modules/pince.nix          # PINCE debugger (built from source)
     ../modules/security.nix        # Security hardening

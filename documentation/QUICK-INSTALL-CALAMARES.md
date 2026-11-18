@@ -61,10 +61,10 @@ cd /mnt/etc
 sudo git clone https://github.com/ultus-net/nixos-base.git nixos
 
 # Copy the hardware config that Calamares generated
-sudo cp /mnt/etc/nixos.backup/hardware-configuration.nix /mnt/etc/nixos/machines/
+sudo cp /mnt/etc/nixos.backup/hardware-configuration.nix /mnt/etc/nixos/hosts/
 
 # Edit tower.nix to match your username from Calamares
-sudo nano /mnt/etc/nixos/machines/tower.nix
+sudo nano /mnt/etc/nixos/hosts/tower/default.nix
 # Change "hunter" to your username if different
 
 # Rebuild the system with your config
@@ -106,10 +106,10 @@ sudo mv /etc/nixos /etc/nixos.backup
 sudo ln -s ~/nixos-base /etc/nixos
 
 # Copy hardware config
-sudo cp /etc/nixos.backup/hardware-configuration.nix /etc/nixos/machines/
+sudo cp /etc/nixos.backup/hardware-configuration.nix /etc/nixos/hosts/
 
 # Edit tower.nix to match your username
-nano ~/nixos-base/machines/tower.nix
+nano ~/nixos-base/hosts/tower/default.nix
 # Change ALL instances of "hunter" to YOUR username
 
 # Apply your config
@@ -143,7 +143,7 @@ Make sure you updated the username in `tower.nix`:
 whoami
 
 # Edit tower.nix and change "hunter" to your username
-nano ~/nixos-base/machines/tower.nix
+nano ~/nixos-base/hosts/tower/default.nix
 ```
 
 Look for these sections and update:
@@ -170,7 +170,7 @@ Don't replace the config entirely. Instead:
 ```nix
 imports = [
   ./hardware-configuration.nix
-  ~/nixos-base/profiles/cosmic.nix
+  ~/nixos-base/roles/cosmic.nix
 ];
 ```
 
