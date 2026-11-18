@@ -1,323 +1,208 @@
 # Architecture
 
-This document explains the repository structure and design decisions.
+How the tree is layered, what each output is, and why the boundaries sit where
+they do.
 
-## Repository Layout
+## Layout
 
 ```
 nix/
-├── flake.nix              # Main flake defining all configurations
-├── modules/               # Reusable NixOS modules
-├── roles/                 # Desktop environment roles
-├── hosts/                 # Machine-specific configurations
-├── home/                  # Home Manager configurations
-├── pkgs/                  # Scripts and sources the modules install
-├── tests/                 # nixosTest definitions, one per host
-├── lib/                   # Flake output helpers
-├── containers/            # Dev container image
-├── scripts/               # Helper scripts
-└── .github/               # CI/CD workflows
+├── flake.nix              # inputs, outputs, checks, mkSystem
+├── hosts/                 # one directory per machine
+│   ├── tower/             # default.nix + hardware.nix
+│   ├── work-laptop/
+│   └── example/           # skeleton, copied when a machine joins
+├── roles/                 # desktop and server compositions
+├── modules/               # host-agnostic pieces, each guarded by an option
+├── pkgs/                  # sources a module installs (agent-sandbox)
+├── home/                  # Home Manager profiles
+├── lib/forAllSystems.nix  # per-system output helper, replaces flake-utils
+├── tests/hosts.nix        # one nixosTest per host
+├── containers/dev/        # toolchain image, built with dockerTools
+├── scripts/               # gates and helpers
+└── .github/               # ci.yml and the image publish
 ```
 
-## Design Philosophy
+## The layering
 
-### Composition Over Inheritance
+Three levels, one direction. A host imports a role, a role imports modules, and
+nothing goes back up.
 
-This flake uses **composition** to build configurations:
+```mermaid
+flowchart TD
+  F["flake.nix<br/>mkSystem"] --> H["hosts/&lt;name&gt;/default.nix"]
+  H --> HW["hosts/&lt;name&gt;/hardware.nix"]
+  H --> R["roles/&lt;desktop&gt;.nix"]
+  R --> M["modules/*.nix"]
+  H --> M
+  M -.->|"forbidden"| H
+  R -.->|"forbidden"| H
+```
 
-- **Modules** (`modules/`) are small, focused pieces (audio, gaming, development)
-- **Roles** (`roles/`) compose modules into complete desktop environments
-- **Hosts** (`hosts/`) compose roles with hardware-specific config
+- **Host.** Identity and hardware. `networking.hostName`, the user account, the
+  disk layout in `hardware.nix`, and the role import. Nothing reusable lives
+  here.
+- **Role.** Reusable composition. `roles/kde.nix` imports the modules a KDE
+  machine needs and sets the defaults that belong to that desktop.
+- **Module.** Host-agnostic. An option, a guard, and the config behind it.
 
-### Desktop Agnostic Core
+The forbidden edges are enforced, not documented. `scripts/check-layering.py`
+strips comments and string bodies, then fails on any code reference to `hosts/`
+under `roles/` or `modules/`. `--self-test` proves the checker still catches a
+violation, so a checker that stopped matching fails too.
 
-The core configuration (`modules/base.nix`) is desktop-agnostic:
-- Boot configuration
-- Locale and timezone
-- SSH and networking
-- User management
-- System maintenance
+`base-server` is a role-only output: `mkSystem ./roles/base.nix`. It exists so
+the headless role keeps compiling without inventing a machine for it.
 
-Desktop-specific configuration lives in `roles/` and their imported modules.
+## flake.nix
 
-### Agent Sessions Are Contained
-
-`modules/agent-sandbox.nix` installs an `agent-sandbox` launcher and an
-allowlisting `CONNECT` proxy. A session is a transient `systemd-nspawn`
-container: read-only store, one read-write project bind, tmpfs home, loopback
-only, and egress solely through the proxy's unix socket. It is opt-in per host
-through `machines.agentSandbox.enable`, so nothing about agent isolation reaches
-a host that did not ask for it. See [AGENT-SANDBOX.md](AGENT-SANDBOX.md).
-
-### Hosts Are Tested, Not Inspected
-
-`tests/hosts.nix` builds a `nixosTest` per host from the real host module, with
-QEMU's disk and bootloader substituted for the host's. CI runs those, so a host
-that cannot reach `multi-user.target` fails the pull request.
-
-## Flake Structure
+`mkSystem` is the only constructor. It applies the shared
+`nixpkgs.config.allowUnfree`, `specialArgs` for `inputs`, and the system string,
+so every host is built the same way and a test harness can own options the host
+does not need.
 
 ### Inputs
-- **nixpkgs** - `nixpkgs-unstable`, pinned by `flake.lock`. One package set; no
-  stable overlay
-- **home-manager** - Follows the same nixpkgs input
+
+| Input | Pin | Why |
+| --- | --- | --- |
+| `nixpkgs` | `nixpkgs-unstable`, by `flake.lock` | one package set, no stable overlay |
+| `home-manager` | `follows = "nixpkgs"` | same package set as the system |
 
 `lib/forAllSystems.nix` replaces `flake-utils`: it nests each per-system output
-under its system name. `devShells.default` uses `pkgs.mkShell`, so `devshell`
-is not an input either.
+under its system name. `devShells.default` is `pkgs.mkShell`, so `devshell` is
+not an input either. Two inputs, one lock.
 
 ### Outputs
 
-#### Per-System Outputs
-x86_64-linux only:
+Per system (`x86_64-linux`):
 
-- **devShells.default** - Development shell (`pkgs.mkShell`): toolchains,
-  linters and CLI tools
-- **packages.dev-image** - OCI toolchain image for dev containers
+| Output | What |
+| --- | --- |
+| `devShells.default` | toolchains, linters, `git`, `gh`, `direnv` |
+| `packages.dev-image` | the OCI toolchain image, `dockerTools.buildLayeredImage` |
+| `checks` | the gates below |
 
-#### Top-Level Outputs
-- **nixosConfigurations** - All system configurations (base-server, tower, work-laptop)
-- **homeConfigurations."hunter@x86_64-linux"** - Standalone Home Manager configuration
-- **templates.homeManager** - Project template for a Home Manager configuration
+Top level:
 
-## Module System
+| Output | What |
+| --- | --- |
+| `nixosConfigurations` | `base-server`, `tower`, `work-laptop` |
+| `homeConfigurations."hunter@x86_64-linux"` | the standalone HM profile |
+| `templates.homeManager` | a starting point for another HM config |
 
-### Module Categories
+### Checks
 
-1. **Desktop Environments** (`modules/kde.nix`, `modules/hyprland.nix`, `modules/xfce.nix`)
-   - Self-contained desktop environment configuration
-   - Examples: `kde.nix`, `hyprland.nix`, `xfce.nix`
+| Check | Proves |
+| --- | --- |
+| `layering` | no role or module names a path under `hosts/`, and `--self-test` shows the checker still fails a planted violation |
+| `no-initial-password` | no `initialHashedPassword` outside `hosts/example/` |
+| `agent-sandbox-proxy` | the proxy's allowlist, address filter and dialer |
+| `<host>` (per host) | the real host module reaches `multi-user.target` in QEMU |
 
-2. **Feature Modules** (`modules/*.nix`)
-   - Optional functionality (gaming, development, multimedia)
-   - Enabled via `<module>.enable = true;`
+The host tests come from `tests/hosts.nix`. Each one builds from the real host
+module with QEMU's root disk and without the NVIDIA GPU, waits for
+`multi-user.target`, and asserts `sshd`, an active `firewall.service`, and one
+service that host actually enables. `work-laptop` asserts `tlp.service`, not
+`fwupd.service`: fwupd is `linked` there, never `enabled`, so `is-enabled` exits
+non-zero on a correct system.
 
-3. **Core Modules** (`modules/base.nix`, `modules/security.nix`,
-   `modules/networking.nix`)
-   - Essential functionality shared by roles
+## Module namespaces
 
-### Module Design Pattern
+One namespace per concern, so an option reads as where it comes from.
 
-Modules follow this pattern:
+| Prefix | Module |
+| --- | --- |
+| `machines.agentSandbox` | `agent-sandbox.nix` |
+| `machines.autoUpgrade` | `auto-upgrade.nix` |
+| `machines.containers` | `containers.nix` |
+| `machines.wallpapers` | `wallpapers.nix` |
+| `machines.zram` | `zram.nix` |
+| `commonPackages` | `common-packages.nix` |
+| `gaming` | `gaming.nix` |
+| `kde`, `xfce`, `hyprland` | the desktop modules |
+| `multimedia`, `sysadmin`, `virtualization`, `pince`, `deployConfig` | same-named modules |
 
-```nix
-{ config, lib, pkgs, ... }:
-{
-  options.<namespace>.<feature> = {
-    enable = lib.mkEnableOption "description";
-    # Additional options...
-  };
+A module with no option applies its defaults on import: `base.nix`,
+`networking.nix`, `security.nix`, `audio.nix`, `fonts.nix`, `laptop.nix`,
+`development.nix`, `nvidia.nix`, `home-manager.nix`.
 
-  config = lib.mkIf config.<namespace>.<feature>.enable {
-    # Configuration here...
-  };
-}
-```
+## Agents are contained
 
-### Namespace Conventions
+`agent-sandbox.nix` installs a launcher and an allowlisting `CONNECT` proxy. A
+session is a transient `systemd-nspawn` container: read-only store, one
+read-write project bind, tmpfs home, loopback only, and egress solely through the
+proxy's unix socket. It is opt-in per host through `machines.agentSandbox`, so
+nothing about agent isolation reaches a host that did not ask for it.
 
-- `commonPackages.*` - Common package configuration
-- `machines.*` - Machine-level configuration (zram, containers, auto-upgrade)
-- `multimedia.*` - Multimedia feature configuration
-- `gaming.*` - Gaming feature configuration
-- `development.*` - Development tools configuration
-- (etc.)
+Two deliberate choices:
 
-## Role Structure
+- `--private-users=<uid>:1`, so container root is the invoking host user. Files
+  the session writes in the project are the owner's, and no host uid the session
+  does not need is mapped.
+- No `--volatile` or `--ephemeral`. Both need btrfs, and neither is what makes
+  the session disposable; the tmpfs home and the absence of a host home mount
+  are.
 
-Roles compose modules into complete desktop environments:
+[AGENT-SANDBOX.md](AGENT-SANDBOX.md) states the boundary and what it does not
+cover.
 
-```nix
-{ config, pkgs, lib, inputs, ... }:
-{
-  imports = [
-    ../modules/base.nix  # Base machine config
-    ../modules/common-packages.nix # CLI tools
-    ../modules/kde.nix             # Desktop environment
-    ../modules/audio.nix           # Audio support
-    ../modules/fonts.nix           # Font configuration
-    # ... other modules
-  ];
+## Update path
 
-  # Role-specific configuration
-  commonPackages.enable = true;
-  # ...
-}
-```
+`machines.autoUpgrade` is the only update path, and it is two pieces:
 
-## Machine Configuration
+- `system.autoUpgrade` rebuilds `flakePath#<host>` with `--no-update-lock-file`,
+  so a switch never moves an input, and with `allowReboot = false`, so a kernel
+  or driver change waits for the next boot.
+- The `nixos-upgrade` service's `preStart` runs `git fetch origin <ref>` then
+  `git merge --ff-only FETCH_HEAD` in `flakePath`.
 
-Machine configurations are deployment-specific:
+The fast-forward is what makes the reviewed-commit rule true: a host only moves
+to a commit that is already on `origin/main`, and `main` only moves through CI.
+The flake attribute in the unit names the host, so the rebuild cannot pick up a
+different one.
 
-1. Import base configuration (`modules/base.nix`)
-2. Import hardware configuration (generated by installer)
-3. Import chosen role
-4. Set machine-specific options (hostname, users, etc.)
+`safe.directory` names `flakePath` rather than `*`, so the git trust the unit
+grants is the one checkout it reads.
 
-Example:
-```nix
-{ config, pkgs, lib, inputs, ... }:
-{
-  imports = [
-    ../../modules/base.nix
-    ./hardware.nix
-    ../../roles/kde.nix
-  ];
+## Home Manager, two ways
 
-  networking.hostName = "my-laptop";
+| Wiring | Where |
+| --- | --- |
+| NixOS module | `modules/home-manager.nix`, imported by every role |
+| Standalone | `homeConfigurations."hunter@x86_64-linux"`, for a non-NixOS host |
 
-  users.users.alice = {
-    enable = true;
-    isAdmin = true;
-  };
-}
-```
+Standalone is what a macOS or foreign-Linux machine uses:
+`home-manager switch --flake .#hunter@x86_64-linux`.
 
-## Configuration Flow
+## Maintenance defaults
 
-```
-flake.nix
-  └─> nixosConfigurations.<name>
-       └─> hosts/<name>/default.nix or roles/<name>.nix
-            ├─> modules/base.nix (base)
-            ├─> hardware.nix (hardware)
-            └─> roles/<desktop>.nix (desktop)
-                 ├─> modules/common-packages.nix
-                 ├─> modules/<desktop>.nix
-                 ├─> modules/audio.nix
-                 ├─> modules/fonts.nix
-                 └─> modules/home-manager.nix
-```
+`nix.gc` runs on a timer: three system generations, store paths older than 14
+days. The rollback window is short on purpose, and it is the same on every host
+because it lives in `modules/base.nix`.
 
-## Home Manager Integration
+ZRAM comes from `modules/zram.nix`, imported by `base.nix`. Auto-sizing is
+`min(total_ram / 2, machines.zram.maxSize)`, with `lz4` by default.
 
-Home Manager is integrated two ways:
+## Security defaults
 
-1. **NixOS Module** - Included in system configurations
-2. **Standalone** - For non-NixOS systems
+`modules/security.nix` enables the firewall and sshd, with password
+authentication and root login off. No password hash is committed for a real
+host, so an account starts locked and the first password is set on the console.
 
-
-## CI/CD Pipeline
-
-`.github/workflows/ci.yml` proves behaviour, not syntax:
-
-1. **Branch name** - pull request head branches start with an allowed prefix
-2. **Flake check** - `nix flake check` runs the layering gate, the
-   `initialHashedPassword` gate, and one `nixosTest` per host
-3. **Build** - `nix build .#nixosConfigurations.<host>.config.system.build.toplevel`
-   for `base-server`, `tower` and `work-laptop`
-
-Each host test boots the real host module with QEMU's root disk and without the
-NVIDIA GPU, waits for `multi-user.target`, and asserts `sshd`, an active
-`firewall.service`, and a host-specific service.
-
-See `.github/CI-CD-GUIDE.md` for complete pipeline documentation.
-
-## Nixpkgs Pin
-
-`flake.lock` pins nixpkgs to a specific revision:
-
-```nix
-nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-```
-```
-
-To update:
-```bash
-nix flake lock --update-input nixpkgs
-```
-
-## User Management
-
-Users are declared with the standard NixOS `users.users` options:
-
-```nix
-users.users.alice = {
-  enable = true;
-  isAdmin = true;  # Add to wheel group
-  shell = pkgs.bash;
-};
-```
-
-This creates:
-- User account with home directory
-- Appropriate group memberships
-- Shell configuration
-- Home Manager integration (if enabled)
-
-## ZRAM Configuration
-
-ZRAM swap is configured via `modules/zram.nix`:
-
-```nix
-machines.zram.enableAutoSize = true;  # Auto-size based on RAM
-machines.zram.maxSize = 4294967296;   # 4GiB max
-machines.zram.compAlgorithm = "lz4";  # Compression algorithm
-```
-
-Auto-sizing uses: `min(total_ram / 2, maxSize)`
-
-## System Maintenance
-
-Automatic garbage collection is configured in `modules/base.nix`:
-
-- Runs daily via systemd timer
-- Keeps last 3 generations
-- Removes store paths older than 14 days
-
-Override per-machine if needed:
-```nix
-nix.gc = {
-  automatic = true;
-  dates = "weekly";
-  options = "--delete-older-than 30d";
-};
-```
-
-## Security Configuration
-
-Security defaults from `modules/security.nix`:
-
-- Firewall enabled
-- SSH key-based auth only
-- No root login
-- Fingerprint auth (if hardware available)
-- mDNS/Avahi for local discovery
-
-Additional hardening available in `modules/base.nix`.
-
-## Development Environment
-
-The flake provides a dev shell with tools:
+## Development shell
 
 ```bash
 nix develop
 ```
 
-Includes:
-- Nix formatters and linters
-- Development tools (git, gh, direnv)
-- Language toolchains (Python, Node.js, Go, Rust)
-- Container tools (docker)
-- Build tools (cmake, pkg-config, just)
+Nix formatters and linters, `git`, `gh`, `direnv`, the language toolchains,
+`docker`, `cmake`, `pkg-config` and `just`. The same toolchain, packaged, is
+`dev-image` and published to `ghcr.io/ultus-net/nix-dev` from `main` only.
 
-## Testing Strategy
+## CI
 
-1. **Local Testing** - `nix flake check`
-2. **Build Testing** - Dry-run builds
-3. **VM Testing** - Boot VMs to verify functionality
-4. **CI Testing** - Automated testing on push/PR
+`.github/workflows/ci.yml` proves behaviour. The branch-name job checks the
+prefix, `flake check` runs the gates above, and the build job builds each host's
+toplevel. `nix flake check` boots a VM per host, so a run takes 15 to 25 minutes.
 
-See `USAGE.md` for testing commands.
-
-## Contributing
-
-When adding new features:
-
-1. Create focused modules in `modules/`
-2. Document options and usage
-3. Update relevant roles
-4. Add tests to CI pipeline
-5. Update documentation
-
-See `CONTRIBUTING.md` for detailed contribution guidelines.
+`.github/CI-CD-GUIDE.md` lists what each job proves.

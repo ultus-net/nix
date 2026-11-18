@@ -18,6 +18,8 @@ Three jobs, all required on `main`:
      `--self-test`, so a role or module that imports `hosts/` fails the build.
    - `checks.<system>.no-initial-password`: greps for `initialHashedPassword`
      outside `hosts/example/`.
+   - `checks.<system>.agent-sandbox-proxy`: the proxy's allowlist, address
+     filter and dialer, from `tests/agent-sandbox-proxy.py`.
    - `checks.<system>.<host>`: one `nixosTest` per host.
 3. **Build** - `nix build .#nixosConfigurations.<host>.config.system.build.toplevel`
    for `base-server`, `tower` and `work-laptop`.

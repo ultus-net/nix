@@ -1,66 +1,48 @@
 # Roles
 
-## Purpose
-This directory holds desktop "roles": small NixOS module fragments that
-describe a desktop environment, related packages, and role-level features
-(QoL, developer packages, desktop services). Roles do NOT set
-machine-specific values such as `networking.hostName` or disk identifiers.
-Each role carries a placeholder `fileSystems` block so the flake evaluates, and
-the host overrides it.
+A role is a desktop or server composition: the modules it needs and the defaults
+that belong to that desktop. One role per output, imported by a host.
 
-These roles are **incomplete system configurations**. They
-cannot be installed directly without adding:
-1. Real `fileSystems` values (the role ships placeholders; use the host's `hardware.nix`)
-2. At least one user account
-3. A hostname
+| File | Composition |
+| --- | --- |
+| `kde.nix` | KDE Plasma 6 on Wayland, SDDM, the KDE app set, wallpapers |
+| `hyprland.nix` | Hyprland, Waybar, Wofi, Kitty, wallpapers |
+| `xfce.nix` | XFCE on X11, Thunar, wallpapers |
+| `base.nix` | headless: CLI set, security, NetworkManager, zram |
 
-For a complete example, see `hosts/example/default.nix`.
+`base-server` is built straight from `roles/base.nix` by `flake.nix`, so the
+headless composition keeps compiling without a host directory behind it.
 
-## Available Roles
+## What a role may contain
 
-### Headless/Server Role
+- Module imports and the option values that every machine on that desktop wants.
+- Desktop services: display manager, session variables, portal backends.
+- Placeholder `fileSystems` entries with `lib.mkDefault`, so the flake evaluates
+  before a host has a real disk. The host's `hardware.nix` wins.
 
-- **base.nix** - Minimal headless base (no desktop environment)
-  - Essential CLI tools and modern replacements
-  - Security hardening (firewall, fail2ban, SSH)
-  - NetworkManager for network configuration
-  - ZRAM compressed swap
-  - Suitable for servers, containers, VMs, and headless systems
-  - Optional modules include development, containers, sysadmin, and virtualization
+## What a role may not contain
 
-### Desktop Environments
+| Not this | Because |
+| --- | --- |
+| `networking.hostName` | identity, and a role is shared |
+| disk UUIDs, LUKS, bootloader device paths | hardware, and a role is shared |
+| a user account | each host owns its accounts |
+| a path under `hosts/` | the layering gate fails the build |
 
-- **kde.nix** - KDE Plasma 6 (Qt-based)
-  - Highly customizable
-  - Wayland support
-  - Wide range of applications
+The last row is the one CI enforces. `scripts/check-layering.py` strips comments
+and string bodies, then fails on any code reference to `hosts/` under `roles/` or
+`modules/`.
 
-- **hyprland.nix** - Hyprland
-  - Wayland compositor
-  - Dynamic tiling and window management
+## Using one
 
-- **xfce.nix** - XFCE
-  - Low resource usage
-  - Traditional desktop paradigm
-  - Optional Wayland session available
-  
+```nix
+# hosts/<name>/default.nix
+imports = [
+  ./hardware.nix
+  ../../roles/kde.nix
+];
+```
 
-## Usage
-- To use a role when deploying to hardware, import it from a `hosts/`
-  entry. For example:
-
-  ```nix
-  imports = [
-    ../../modules/base.nix
-    ../../roles/kde.nix
-  ];
-  networking.hostName = "my-pc";
-  ```
-
-- Roles are intentionally shareable: you can reuse the same role across
-  many machines.
-
-## Notes
-- Keep roles focused on desktop-level concerns: session managers,
-  desktop packages, and per-user Home Manager defaults. Avoid embedding
-  disk UUIDs, LUKS settings, or bootloader device paths here.
+A role is not installable on its own. It has no disk, no hostname and no user
+until a host supplies them. `hosts/example/` is the skeleton that shows the
+whole shape.

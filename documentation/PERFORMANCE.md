@@ -1,79 +1,52 @@
-# Performance Tuning Guide
+# Performance
 
-This guide documents the performance optimizations applied to the NixOS tower configuration, providing details on what was changed, why, and how to verify the improvements.
+The tuning `tower` carries, why each piece is there, and how to check it is
+still on. None of this is in the shared defaults.
 
-## Overview
+## What stays global and what does not
 
-The tower configuration includes comprehensive performance tuning targeting:
-- **Gaming Performance**: Lower latency, higher FPS, better Wine/Proton compatibility
-- **Desktop Responsiveness**: Faster application launches, smoother UI interactions
-- **Boot Speed**: Reduced boot times through parallel startup and optimizations
-- **Network Performance**: Improved throughput and latency
-- **SSD Longevity**: Reduced wear through zram and optimized mount options
+| Setting | Scope | Where |
+| --- | --- | --- |
+| ZRAM swap | every host | `modules/zram.nix`, imported by `base.nix` |
+| CPU governor, kernel params, sysctl | `gaming.kernelTuning` only | `modules/gaming.nix` |
+| `zstd` zram, 4 GiB swapfile | `tower` | `hosts/tower/default.nix` |
+| tmpfs `/tmp`, boot timeout, journal cap | `tower` | `hosts/tower/default.nix` |
+| `noatime`/`discard` mount options | `tower` | `hosts/tower/default.nix` |
 
-## Applied Optimizations
+The split is the point. A laptop does not inherit a gaming governor, a latency
+kernel parameter set, or a BBR stack, and every host still gets compressed swap
+because that is a general win.
 
-### 1. Memory & Swap Management
+## Memory
 
-#### zram Compression Swap
-**Location**: `hosts/tower/default.nix`
+ZRAM is the primary swap. `tower` sets `zramSwap` directly with `zstd` and a 50%
+memory bound; every other host gets `machines.zram.*`, which sizes to
+`min(total_ram / 2, machines.zram.maxSize)` with `lz4`.
 
-```nix
-zramSwap = {
-  enable = true;
-  algorithm = "zstd";
-  memoryPercent = 50;
-  priority = 100;
-};
-```
-
-Hosts that do not set `zramSwap` get the `machines.zram.*` service from
-`modules/zram.nix`, which auto-sizes to half of RAM.
-
-**Benefits**:
-- 3-5x compression ratio reduces actual RAM pressure
-- Eliminates disk I/O for most swap operations
-- Extends SSD lifespan by reducing writes
-- Faster swap operations (RAM speed vs disk speed)
-
-**Verification**:
 ```bash
-zramctl  # Should show active zram device
-swapon --show  # Check priority (zram should be higher)
+zramctl
+swapon --show        # zram should outrank the swapfile
 ```
 
-#### Reduced Swapfile Size
-The tower swapfile is 4GB, used as emergency overflow, because zram handles
-primary swapping.
+The 4 GiB swapfile is overflow only. Hibernation would need a swapfile at least
+the size of RAM, which is the reason `tower` does not hibernate.
 
-**Considerations**: If you need hibernation, consider keeping swapfile >= RAM size (30GB).
+## CPU and processes
 
-### 2. CPU & Process Management
-
-#### Performance CPU Governor
-**Location**: `modules/gaming.nix`, enabled by `gaming.kernelTuning`
+`gaming.kernelTuning` sets the governor:
 
 ```nix
 powerManagement.cpuFreqGovernor = "performance";
 ```
 
-**Benefits**:
-- CPU stays at maximum frequency
-- Eliminates frequency scaling latency
-- Best for desktop/gaming workloads
+That costs idle power, roughly 10 to 20 W. `schedutil` is the alternative if the
+machine starts running hot.
 
-**Trade-offs**: Higher power consumption (~10-20W more idle)
-
-**Verification**:
 ```bash
 cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
-# All should show "performance"
 ```
 
-**Alternative**: Use "schedutil" for balance between performance and power efficiency.
-
-#### Gamemode Integration
-**Location**: `hosts/tower/default.nix`
+GameMode comes from `hosts/tower/default.nix`:
 
 ```nix
 programs.gamemode = {
@@ -85,166 +58,38 @@ programs.gamemode = {
 };
 ```
 
-**Benefits**:
-- Automatic CPU priority boost when gaming
-- GPU performance state optimization
-- Per-game performance tuning
-
-**Usage**:
 ```bash
-# Launch game with gamemode
-gamemoderun your-game
-
-# Or in Steam launch options:
-gamemoderun %command%
-
-# Check if gamemode is active:
-gamemoded -s
+gamemoderun %command%      # in Steam launch options
+gamemoded -s               # is it active
 ```
 
-### 3. Kernel Optimizations
+## Kernel
 
-#### Low-Latency Kernel Parameters
-**Location**: `modules/gaming.nix`, enabled by `gaming.kernelTuning = true` in `hosts/tower/default.nix`
+`gaming.kernelTuning` adds three parameters:
 
 ```nix
 boot.kernelParams = [
-  "processor.max_cstate=2"    # Reduce CPU sleep state latency
-  "nowatchdog"                # Disable kernel watchdog
+  "processor.max_cstate=2"        # shallower C-state, lower wake latency
+  "nowatchdog"
   "transparent_hugepage=always"
 ];
 ```
 
-CPU mitigations stay on for every host. `mitigations=off` and the fixed TSC
-clocksource were removed: they trade security or portability for a few percent,
-and this host runs agents.
+CPU mitigations stay on for every host. `mitigations=off` was tried and removed:
+it trades security for a few percent, and `tower` runs agent sessions.
 
-**Verification**:
 ```bash
 cat /proc/cmdline
-cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 ```
 
-#### System Tuning (sysctl)
-**Location**: `modules/gaming.nix`, enabled by `gaming.kernelTuning`
+`sysctl`, same option:
 
 ```nix
 boot.kernel.sysctl = {
-  "vm.swappiness" = 10;              # Prefer RAM over swap
-  "vm.vfs_cache_pressure" = 50;      # Keep more filesystem cache
-  "vm.dirty_ratio" = 10;             # Write to disk sooner
-  "vm.dirty_background_ratio" = 5;   
-  "net.core.default_qdisc" = "fq";   # Fair queue scheduler
-  "net.ipv4.tcp_congestion_control" = "bbr";  # Better TCP performance
-};
-```
-
-**Benefits**:
-- Desktop stays responsive under memory pressure
-- Better filesystem cache utilization
-- 10-30% network performance improvement with BBR
-
-### 4. Storage & I/O Optimization
-
-#### NVMe I/O Scheduler
-**Location**: `modules/gaming.nix` (udev rules), enabled by `gaming.kernelTuning`
-
-```bash
-# NVMe drives use none, and the Steam I/O service uses mq-deadline elsewhere
-ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="none"
-```
-
-**Verification**:
-```bash
-cat /sys/block/nvme0n1/queue/scheduler  # Should show [none]
-```
-
-#### SSD-Optimized Mount Options
-**Location**: `hosts/tower/default.nix`
-
-All filesystems now use:
-```nix
-options = [ "noatime" "nodiratime" "discard" "commit=60" ];
-```
-
-**Benefits**:
-- `noatime`: No access time updates (reduces writes)
-- `nodiratime`: No directory access time updates
-- `discard`: Continuous TRIM (`services.fstrim` also runs weekly)
-- `commit=60`: Batch writes every 60s (reduces SSD wear)
-
-**SSD Lifespan Impact**: Can extend SSD life by 20-30% by reducing write amplification.
-
-### 5. Boot Speed Optimizations
-
-#### tmpfs for /tmp
-**Location**: `hosts/tower/default.nix`
-
-```nix
-boot.tmp.useTmpfs = true;
-boot.tmp.tmpfsSize = "50%";
-```
-
-**Benefits**:
-- /tmp operations at RAM speed
-- No SSD writes for temporary files
-- Saves 2-3 seconds on boot
-
-**Trade-off**: Large temporary files consume RAM (capped at 50% = 15GB).
-
-#### Reduced Boot Timeout
-```nix
-boot.loader.timeout = 3;  # Reduced from default 5s
-```
-
-**Saves**: 2 seconds on every boot.
-
-#### Journal Size Limits
-```nix
-services.journald.extraConfig = ''
-  SystemMaxUse=500M
-  MaxRetentionSec=1week
-'';
-```
-
-**Benefits**:
-- Limits journal to 500MB (vs unlimited)
-- Faster log queries
-- Reduced disk usage
-
-### 6. Gaming-Specific Optimizations
-
-#### Wine/Proton Performance
-**Location**: `home/hunter.nix`
-
-```nix
-home.sessionVariables = {
-  WINEFSYNC = "1";  # Enable ntsync/futex2
-  VK_ICD_FILENAMES = "/run/opengl-driver/share/vulkan/icd.d/nvidia_icd.x86_64.json";
-  STEAM_EXTRA_COMPAT_TOOLS_PATHS = "$HOME/.steam/root/compatibilitytools.d";
-};
-```
-
-**Benefits**:
-- ntsync: 10-20% FPS improvement in DirectX games via Wine/Proton
-- Vulkan ICD: Ensures games use NVIDIA GPU (important for hybrid systems)
-
-#### Wayland Environment Variables
-All Wayland apps properly configured:
-```nix
-MOZ_ENABLE_WAYLAND = "1";
-NIXOS_OZONE_WL = "1";  # Chromium/Electron
-QT_QPA_PLATFORM = "wayland";
-SDL_VIDEODRIVER = "wayland";
-```
-
-### 7. Network Performance
-
-#### TCP BBR Congestion Control
-**Location**: `modules/gaming.nix`, enabled by `gaming.kernelTuning`
-
-```nix
-boot.kernel.sysctl = {
+  "vm.swappiness" = 10;
+  "vm.vfs_cache_pressure" = 50;
+  "vm.dirty_ratio" = 10;
+  "vm.dirty_background_ratio" = 5;
   "net.core.default_qdisc" = "fq";
   "net.ipv4.tcp_congestion_control" = "bbr";
   "net.ipv4.tcp_fastopen" = 3;
@@ -252,150 +97,97 @@ boot.kernel.sysctl = {
 };
 ```
 
-**Benefits**:
-- 10-30% better throughput on high-latency connections
-- Lower latency for gaming
-- Better handling of packet loss
+BBR is the one worth knowing how to undo. On a very low-latency LAN it can lose
+to `cubic`:
 
-**Verification**:
-```bash
-sysctl net.ipv4.tcp_congestion_control  # Should show bbr
-sysctl net.core.default_qdisc           # Should show fq
-```
-
-## Performance Measurement
-
-### Before/After Benchmarks
-
-Run these commands to measure improvements:
-
-```bash
-# Boot time
-systemd-analyze  # Target: <35s total
-
-# Memory performance
-sysbench memory run
-
-# Disk I/O (run on NVMe)
-fio --name=randread --ioengine=libaio --rw=randread --bs=4k --numjobs=1 --size=1G --runtime=60
-
-# Network throughput
-iperf3 -c <server>  # Should see improvement with BBR
-
-# Gaming FPS
-# Use MangoHud to monitor FPS before/after
-mangohud your-game
-```
-
-### Expected Results
-
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| Boot Time | 41s | 33-35s | 15-20% |
-| Gaming FPS | Baseline | +5-15% | Varies by game |
-| System Responsiveness | Good | Excellent | Subjective |
-| Network Latency | Baseline | -10-20ms | On high-latency links |
-| SSD Writes/Day | High | Reduced 30% | Longer lifespan |
-
-## Monitoring & Verification
-
-### Check Active Optimizations
-
-Create this verification script:
-
-```bash
-#!/usr/bin/env bash
-# Performance tuning verification
-
-echo "=== CPU Governor ==="
-cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-
-echo -e "\n=== zram Status ==="
-zramctl
-
-echo -e "\n=== I/O Schedulers ==="
-echo "NVMe: $(cat /sys/block/nvme0n1/queue/scheduler)"
-echo "SATA: $(cat /sys/block/sda/queue/scheduler)"
-
-echo -e "\n=== TCP Congestion Control ==="
-sysctl net.ipv4.tcp_congestion_control
-
-echo -e "\n=== Kernel Parameters ==="
-cat /proc/cmdline
-cat /proc/cmdline | grep -o 'ntsync.enable=\w*'
-
-echo -e "\n=== Memory Stats ==="
-free -h
-
-echo -e "\n=== Swap Priority ==="
-swapon --show
-
-echo -e "\n=== tmpfs Status ==="
-df -h | grep tmpfs | grep -E '(tmp|run)'
-
-echo -e "\n=== Gamemode Status ==="
-systemctl status gamemode --no-pager 2>/dev/null || echo "Not running (normal when no games active)"
-```
-
-Save as `scripts/verify-performance.sh` and run after each rebuild.
-
-## Reverting Changes
-
-If you need to revert specific optimizations:
-
-### Conservative Mode
-
-CPU mitigations are on for every host; there is no security trade to undo. To
-drop the latency tuning instead, set `gaming.kernelTuning = false` in
-`hosts/tower/default.nix`. The governor then comes from the NixOS default.
-
-### Power Saving Mode
-
-```nix
-powerManagement.cpuFreqGovernor = "powersave";
-boot.kernelParams = [
-  # Remove performance-focused params
-  "processor.max_cstate=5"  # Allow deeper C-states
-];
-```
-
-## Troubleshooting
-
-### Issue: System Runs Hot
-**Solution**: Switch CPU governor to "schedutil" or "powersave"
-
-### Issue: Out of Memory Errors
-**Solution**: Reduce tmpfs size or disable:
-```nix
-boot.tmp.useTmpfs = false;
-```
-
-### Issue: Game Crashes with ntsync
-**Solution**: Some older games may not work with ntsync. Remove from kernel params:
-```nix
-# Remove: "ntsync.enable=1"
-```
-And unset WINEFSYNC in home-manager.
-
-### Issue: Network Performance Degraded
-**Solution**: BBR may perform worse on very low-latency local networks. Switch back:
 ```nix
 boot.kernel.sysctl."net.ipv4.tcp_congestion_control" = "cubic";
 ```
 
-## References
+```bash
+sysctl net.ipv4.tcp_congestion_control
+sysctl net.core.default_qdisc
+```
 
-- [NixOS Wiki: Performance Tuning](https://nixos.wiki/wiki/Performance_tuning)
-- [Arch Wiki: Improving Performance](https://wiki.archlinux.org/title/Improving_performance)
-- [Linux Gaming: ntsync/fsync](https://github.com/ValveSoftware/wine/wiki/Futex2)
-- [TCP BBR Congestion Control](https://queue.acm.org/detail.cfm?id=3022184)
-- [Linux I/O Schedulers](https://wiki.archlinux.org/title/Improving_performance#Storage_devices)
+## Storage
 
-## Contributing
+A udev rule in `gaming.nix` pins the NVMe scheduler to `none`, which is what the
+driver wants for a device with no seek cost:
 
-Found additional optimizations? See [CONTRIBUTING.md](CONTRIBUTING.md) for how to submit improvements.
+```bash
+cat /sys/block/nvme0n1/queue/scheduler
+```
 
----
+`tower` mounts with:
 
-**Last Updated**: January 2026  
-**Configuration Version**: NixOS 24.11 (tower machine)
+```nix
+options = [ "noatime" "nodiratime" "discard" "commit=60" ];
+```
+
+`noatime` and `nodiratime` drop write traffic nobody reads. `discard` trims
+continuously; `services.fstrim` also runs weekly, so either alone would do.
+`commit=60` batches metadata writes, which trades up to a minute of lost writes
+on a hard power cut for less SSD wear. On a machine that holds nothing
+irreplaceable that is the right trade.
+
+## Boot
+
+```nix
+boot.tmp.useTmpfs = true;
+boot.tmp.tmpfsSize = "50%";
+boot.loader.timeout = 3;
+services.journald.extraConfig = ''
+  SystemMaxUse=500M
+  MaxRetentionSec=1week
+'';
+```
+
+tmpfs `/tmp` is RAM-speed and costs no SSD writes, with the trade that a large
+temporary file eats RAM. The half-of-RAM cap is the ceiling. A tmpfs `/tmp` also
+means `/tmp` does not survive a reboot, which is why nothing here puts state in
+it.
+
+## Gaming environment
+
+`home/hunter.nix` sets:
+
+```nix
+WINEFSYNC = "1";
+VK_ICD_FILENAMES = "/run/opengl-driver/share/vulkan/icd.d/nvidia_icd.x86_64.json";
+STEAM_EXTRA_COMPAT_TOOLS_PATHS = "$HOME/.steam/root/compatibilitytools.d";
+```
+
+`WINEFSYNC` is the futex-based sync path in Wine and Proton; some older titles
+crash with it, and unsetting it here is the fix. The Vulkan ICD pin matters
+because a hybrid machine can otherwise pick the wrong GPU.
+
+Wayland variables, set for the desktop session:
+
+```nix
+MOZ_ENABLE_WAYLAND = "1";
+NIXOS_OZONE_WL = "1";
+QT_QPA_PLATFORM = "wayland";
+SDL_VIDEODRIVER = "wayland";
+```
+
+## Verifying
+
+`scripts/verify-performance.sh` prints the governor, zram state, both I/O
+schedulers, the congestion control setting, `/proc/cmdline`, memory and swap,
+tmpfs usage, and GameMode's status. Run it after a switch that touched any of
+the above.
+
+```bash
+./scripts/verify-performance.sh
+```
+
+`systemd-analyze` for boot time. `mangohud <game>` for frame time, which is a
+better number than FPS when the question is smoothness.
+
+## Undoing a change
+
+Set `gaming.kernelTuning = false` in `hosts/tower/default.nix`. The governor,
+the kernel parameters and the sysctl block all disappear together, because they
+are one option.
+
+There is no security trade to undo: mitigations were never turned off.

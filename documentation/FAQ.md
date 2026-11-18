@@ -1,281 +1,93 @@
-# Frequently Asked Questions (FAQ)
+# Notes and answers
 
-## Installation & Setup
+Decisions this tree encodes, and the reason each one exists. Most of these were
+asked once, by me, while building it.
 
-### Q: Which desktop environment should I choose?
+## Why does a fresh install refuse to log in?
 
-**For beginners:**
-- **KDE** - Feature-rich and configurable, works out of the box
-- **XFCE** - Lightweight and stable
-
-**For advanced users:**
-- **Hyprland** - Dynamic tiling Wayland compositor
-
-**For older hardware:**
-- **XFCE** - The lightest of the three
-
-See the desktop comparison table in [README.md](../README.md) for details.
-
-### Q: Can I dual boot with Windows?
-
-Yes! Install Windows first, then install NixOS. The bootloader will automatically detect Windows. Make sure to:
-1. Shrink your Windows partition using Windows Disk Management
-2. Create separate partitions for NixOS during installation
-3. Install NixOS normally - systemd-boot or GRUB will detect Windows
-
-### Q: Why can't I log in after installation?
-
-**Most common issue:** You forgot to set a password! This flake uses empty passwords by default for security.
-
-**Solution:**
-1. Boot into recovery mode or use a live USB
-2. Mount your root partition
-3. Use `nixos-enter` to chroot
-4. Run `passwd username` to set a password
-5. Reboot and log in
-
-Alternatively, add SSH keys to your user config before installation.
-
-### Q: How do I customize the default "hunter" username?
-
-The "hunter" username is just an example. To use your own:
-
-1. Copy `home/hunter.nix` to `home/yourusername.nix`
-2. Edit `hosts/example/default.nix` (or your machine config):
-   - Change `users.users.hunter` to `users.users.yourusername`
-   - Change `home-manager.users.hunter` to `home-manager.users.yourusername`
-3. Update the import: `home-manager.users.yourusername = import ../home/yourusername.nix;`
-4. Rebuild: `sudo nixos-rebuild switch --flake .#your-host`
-
-### Q: Do I need to create a machine config for my first install?
-
-**No!** For your first installation, use the pre-built profiles directly:
-```bash
-nixos-install --flake /mnt/nix#tower
-```
-
-Create custom machine configs later when you want to:
-- Set a custom hostname
-- Add your specific hardware configuration
-- Customize user accounts
-- Enable/disable specific modules
-
-## System Management
-
-### Q: How do I update my system?
+The account ships locked. No password hash is committed for a real host, and
+`scripts/check-no-password-hash.sh` fails CI when `initialHashedPassword`
+appears outside `hosts/example/`. Set the first password on the console:
 
 ```bash
-# Update flake inputs (gets latest package versions)
-nix flake update
-
-# Rebuild with new packages
-sudo nixos-rebuild switch --flake .#your-host
-
-# Or in one command
-nix flake update && sudo nixos-rebuild switch --flake .#your-host
+passwd hunter
 ```
 
-### Q: How do I switch desktop environments?
+An SSH-only host needs a key in the host config instead, because there is no
+console to type on. `INSTALL.md` step 6 covers both.
 
-```bash
-# Switch to a different desktop
-sudo nixos-rebuild switch --flake .#tower
+## Why is `base-server` a `nixosConfigurations` entry with no host directory?
 
-# Or use the helper script
-./scripts/switch-desktop.sh kde
-```
+It exists so the headless role cannot rot. A role that no output uses stops
+compiling the moment its modules change, and nobody notices. `mkSystem
+./roles/base.nix` keeps it in `flake check` without inventing a machine that
+does not exist.
 
-Then log out and select the new desktop from your display manager.
+## Why can't a module import something under `hosts/`?
 
-### Q: Can I have multiple desktop environments installed?
+Because that is the layering inversion this tree was built around. A host is a
+leaf: it picks a role and supplies hardware. A role is reusable composition. A
+module is host-agnostic. The moment a module reads `hosts/tower`, it compiles
+only for `tower` and the reason to have roles disappears.
 
-Yes, but it's not recommended. Desktop environments can conflict with each other. Instead:
-- Use VMs to test different desktops
-- Switch between profiles and reboot
-- Set up multiple user accounts with different desktops
+`scripts/check-layering.py` fails CI on any code reference to `hosts/` under
+`roles/` or `modules/`. It strips comments and string bodies first, so prose
+about hosts stays legal.
 
-### Q: How do I add more users?
+## Why does Hyprland not get the gaming tuning?
 
-Edit your machine configuration:
+`gaming.kernelTuning` used to live in shared defaults, which meant every host
+inherited a `mitigations=off` and a tuned network stack whether or not it played
+games. It is now an option that one host turns on. Shared defaults stay secure.
 
-```nix
-users.users = {
-  firstuser = {
-    isNormalUser = true;
-    description = "First User";
-    extraGroups = [ "wheel" "networkmanager" ];
-  };
-  
-  seconduser = {
-    isNormalUser = true;
-    description = "Second User";
-    extraGroups = [ "networkmanager" ];  # No wheel = no sudo
-  };
-};
-```
+## Why is `networking.nftables.enable` still off?
 
-Then rebuild: `sudo nixos-rebuild switch --flake .#your-host`
+`tower` runs Docker, and the nixpkgs manual warns that the nftables backend
+fights Docker's iptables NAT. Turning it on is not a hardening win if the
+container network stops working. The sandbox network model avoids the question
+entirely: `--private-network` with a unix-socket proxy.
 
-### Q: How do I rollback to a previous generation?
+## Why is there no disk encryption?
 
-```bash
-# List generations
-sudo nix-env --list-generations --profile /nix/var/nix/profiles/system
+None of these machines hold anything that a LUKS prompt would protect, and an
+unattended auto-upgrade cannot unlock a root volume on its own. If that changes,
+the change belongs in one host's `hardware.nix`, because nothing else in the tree
+sets `fileSystems`.
 
-# Rollback to previous generation
-sudo nixos-rebuild switch --rollback
+## Why is `system.autoUpgrade` the only update path?
 
-# Switch to a specific generation
-sudo nix-env --switch-generation 42 --profile /nix/var/nix/profiles/system
-sudo /nix/var/nix/profiles/system/bin/switch-to-configuration switch
-```
+Two update paths drift. The unit fast-forwards the checkout to `origin/main` and
+rebuilds, so a machine only ever runs a commit that passed CI. There is no
+second script to keep in sync, and no way to push an untested commit at a host.
 
-## Optional Modules
+Input bumps stay manual: `nix flake update` is a reviewed commit, not a timer.
 
-### Q: How do I enable gaming support?
+## Why does `nix flake check` take twenty minutes?
 
-Add to your machine configuration:
+It boots one `nixosTest` per host in QEMU and waits for `multi-user.target`. That
+is the gate that catches a unit that is `linked` but not `enabled`, an
+assertion that only holds on a VM, and a module that evaluates but does not
+start. A syntax grep would pass all three.
 
-```nix
-{ config, pkgs, lib, ... }:
-{
-  imports = [
-    ../modules/gaming.nix
-  ];
-  
-  gaming.enable = true;
-  gaming.enableSteam = true;
-}
-```
+It aborts sibling checks when one fails, so a cancelled host test after a failure
+is the same failure, not a second one.
 
-Then rebuild. This installs Steam, Lutris, MangoHUD, and gaming optimizations.
+## Can a second machine join without touching a module?
 
-### Q: How do I enable laptop-specific features?
+Yes. Copy `hosts/example/`, generate a `hardware.nix` on the target, pick a role,
+and add one `mkSystem` line to `flake.nix`. If that needs a change under
+`modules/`, the module has a host assumption in it and that is the bug.
 
-```nix
-{ config, pkgs, lib, ... }:
-{
-  imports = [
-    ../modules/laptop.nix
-  ];
-}
-```
+## Why is Flatpak not installed?
 
-The module applies its defaults on import. That covers power-profiles-daemon,
-thermald, libinput touchpad handling, Bluetooth, and upower.
+Every package here comes from nixpkgs, so one `flake.lock` describes the whole
+system and a rollback restores it. Flatpak adds a second, unpinned package
+source that `nixos-rebuild` cannot revert. Where a package is missing, the fix is
+a nixpkgs bump or an overlay.
 
-### Q: Can I install Flatpak apps?
+## Where do the wallpapers come from?
 
-The flakes don't include Flatpak by default, but you can add it:
-
-```nix
-services.flatpak.enable = true;
-```
-
-Then install apps:
-```bash
-flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-flatpak install flathub org.mozilla.firefox
-```
-
-## Troubleshooting
-
-### Q: I get "experimental feature 'nix-command' is disabled"
-
-This configuration enables flakes by default, but if you see this error:
-
-**Temporary fix:**
-```bash
-nix --extra-experimental-features 'nix-command flakes' <your-command>
-```
-
-**Permanent fix:** Ensure `modules/base.nix` has:
-```nix
-nix.settings.experimental-features = [ "nix-command" "flakes" ];
-```
-
-### Q: My build fails with "evaluation error"
-
-Common causes:
-1. Syntax error in your Nix files - check with `nix flake check`
-2. Missing import - ensure all `imports = [ ... ]` paths are correct
-3. Conflicting options - check for duplicate module imports
-4. Outdated flake.lock - try `nix flake update`
-
-Run `nix flake check` for detailed error messages.
-
-### Q: WiFi doesn't work after installation
-
-1. Check NetworkManager is running: `systemctl status NetworkManager`
-2. Use text UI to connect: `nmtui`
-3. Or use command line: `nmcli device wifi connect "SSID" password "PASSWORD"`
-
-If NetworkManager isn't running, add to your config:
-```nix
-networking.networkmanager.enable = true;
-```
-
-### Q: How do I uninstall/remove NixOS?
-
-NixOS doesn't have an uninstaller. To remove:
-1. Boot from another OS (live USB, other Linux, Windows)
-2. Delete NixOS partitions using `fdisk`, `parted`, or Windows Disk Management
-3. Recreate partitions for another OS
-4. Install the new OS
-
-**Warning:** This will delete all data on NixOS partitions!
-
-## Advanced
-
-### Q: Can I use this on non-NixOS systems?
-
-The Home Manager configurations can be used standalone on any Linux/macOS:
-
-```bash
-# Install Home Manager
-nix run home-manager/master -- init --switch
-
-# Use this flake's config
-home-manager switch --flake .#hunter@x86_64-linux
-```
-
-See [home/README.md](../home/README.md) for details.
-
-### Q: How do I contribute a new desktop environment?
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for complete guidelines. The basic steps:
-1. Create `modules/yourdesktop.nix`
-2. Create `roles/yourdesktop.nix`
-3. Add to `flake.nix` nixosConfigurations
-4. Update documentation
-5. Submit a pull request
-
-### Q: Can I use this in production/servers?
-
-Yes! Use the `base-server` profile for headless systems:
-```bash
-nixos-install --flake /mnt/nix#base-server
-```
-
-Then customize by creating a machine config and importing only the modules you need.
-
-### Q: Where are the wallpapers stored?
-
-Official NixOS wallpapers are in `/run/current-system/sw/share/backgrounds/nixos/`. 
-
-The wallpaper module (enabled by default) automatically rotates through them. To customize:
-```nix
-wallpapers = {
-  enable = true;
-  rotationInterval = "1h";  # Change rotation time
-};
-```
-
-Or disable: `wallpapers.enable = false;`
-
-## Still Have Questions?
-
-- Check [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for common issues
-- Review [ARCHITECTURE.md](ARCHITECTURE.md) to understand the structure
-- Open an issue on GitHub
-- Ask in NixOS community channels (Discourse, Matrix, Reddit)
+`nixos-artwork`, installed system-wide under
+`/run/current-system/sw/share/backgrounds/nixos/`, rotated on a timer by
+`machines.wallpapers`. Home Manager links them at `~/.wallpapers`. Disable per
+host with `machines.wallpapers.enable = false`.

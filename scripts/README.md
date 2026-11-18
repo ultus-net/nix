@@ -1,187 +1,80 @@
 # Scripts
 
-Helper scripts for managing your NixOS system.
+Gates CI runs, and helpers used on a real machine.
 
-## Available Scripts
+## Gates
+
+| Script | Fails when | Check |
+| --- | --- | --- |
+| `check-layering.py` | a role or module names a path under `hosts/` | `checks.<system>.layering` |
+| `check-no-password-hash.sh` | a committed hash appears outside `hosts/example/` | `checks.<system>.no-initial-password` |
+
+`check-layering.py --self-test` plants two violations and two prose cases, then
+asserts it catches the first pair and ignores the second. A checker that stopped
+matching fails its own test.
+
+`check-no-password-hash.sh` assembles its needle at runtime, so it does not match
+its own source.
+
+## Machine helpers
+
+### `switch-desktop.sh <desktop> [host]`
+
+Rewrites the host's role import and rebuilds. Valid names are `kde`, `hyprland`,
+`xfce` and `base`. The host defaults to `hostname -s`, so the bare form works on
+the machine it targets. It shows the diff and asks before writing.
+
+### `switch-host.sh [<flake-ref>]`
+
+Build or switch a host from the flake. Defaults to `.#tower`.
 
 ### `deploy-config.sh`
-Sync your local nix repository to `/etc/nixos` (the system location).
 
-**Usage:**
-```bash
-deploy-config           # Interactive sync with confirmation
-# or use the shorter alias:
-deploy-cfg
-```
+Copies this checkout to `/etc/nixos`, with a timestamped backup first. The
+system-scope unit is what makes the `deploy-config` command available after a
+rebuild. Useful when a machine should rebuild from `/etc/nixos` rather than from
+the checkout that auto-upgrade fast-forwards.
 
-**What it does:**
-1. Shows a preview of changes (dry-run)
-2. Asks for confirmation
-3. Creates a timestamped backup of `/etc/nixos`
-4. Syncs `~/Documents/nix/` → `/etc/nixos/`
-5. Shows next steps for rebuilding
-
-**After deployment:**
 ```bash
 sudo nixos-rebuild switch --flake /etc/nixos#tower
 ```
 
-This script is automatically available system-wide after rebuilding.
+### `validate-hosts-home-manager.sh`
 
-### `switch-desktop.sh`
-Point a host at a different desktop role and rebuild that host. It shows the
-diff, asks for confirmation, and rewrites the host's role import.
-
-**Usage:**
-```bash
-./scripts/switch-desktop.sh <desktop> [host]
-```
-
-**Example:**
-```bash
-# Switch tower from KDE to Hyprland
-./scripts/switch-desktop.sh hyprland tower
-```
-
-**Available desktops:** kde, xfce, hyprland. The host defaults to
-`hostname -s`, so `./scripts/switch-desktop.sh hyprland` works on the machine
-it targets.
-
-### `switch-host.sh`
-Build or switch to a host from the flake. Defaults to `.#tower`.
-
-**Usage:**
-```bash
-./scripts/switch-host.sh [<flake-ref>]
-```
-
-### `check-layering.py`
-Fail when a role or shared module imports a path under `hosts/`. Layering runs
-host -> role -> module, so that import inverts it. CI runs the gate and its
-`--self-test`.
-
-**Usage:**
-```bash
-python3 ./scripts/check-layering.py
-python3 ./scripts/check-layering.py --self-test
-```
-
-### `check-no-password-hash.sh`
-Fail when a committed password hash appears outside `hosts/example/`. The needle
-is assembled at runtime, so the script does not match itself. CI runs it as
-`checks.<system>.no-initial-password`.
-
-**Usage:**
-```bash
-./scripts/check-no-password-hash.sh .
-```
+Evaluates each host's Home Manager profile without switching. It is the cheap
+copy of the `home-manager-hunter.service` failure, which otherwise only shows up
+during a switch.
 
 ### `collect-system-info.sh`
-Gather system information for troubleshooting.
 
-**Usage:**
-```bash
-./scripts/collect-system-info.sh
-```
-
-This collects:
-- Hardware configuration
-- NixOS version
-- Installed packages
-- Active desktop environment
-- System logs
-
-### `setup-displaylink.sh`
-Prepare the proprietary DisplayLink driver blob for NixOS so the `displaylink`
-package can build without manual fiddling.
-
-**Usage (from repo root):**
-```bash
-./scripts/setup-displaylink.sh
-```
-
-What it does:
-- Downloads the official Ubuntu DisplayLink driver ZIP via `nix-prefetch-url`
-	under the name expected by the nixpkgs `displaylink` package.
-- After it succeeds, you can rebuild (for example):
-
-```bash
-sudo nixos-rebuild switch --flake .#work-laptop
-```
-
-### `validate-hosts-home-manager.sh`
-Validate Home Manager configurations.
-
-**Usage:**
-```bash
-./scripts/validate-hosts-home-manager.sh
-```
+Hardware, NixOS version, installed packages, the active session, and the tail of
+the journal, in one paste-able block. Written for a bug report.
 
 ### `verify-performance.sh`
-Verify that all performance optimizations are active and working correctly.
 
-**Usage:**
-```bash
-./scripts/verify-performance.sh
-```
+Prints the governor, zram state, I/O scheduler, congestion control,
+`/proc/cmdline`, memory and swap, tmpfs usage, and GameMode status.
+`PERFORMANCE.md` explains what each value should be.
 
-**What it checks:**
-- CPU governor settings
-- zram compression swap status
-- I/O scheduler configuration (kyber/mq-deadline)
-- TCP BBR congestion control
-- Kernel boot parameters (C-states, hugepages, watchdog)
-- Memory tuning (swappiness, VFS cache pressure)
-- tmpfs configuration
-- Gamemode service status
-- Boot time analysis
+### `setup-displaylink.sh`
 
-**When to run:**
-- After rebuilding with performance optimizations
-- To troubleshoot performance issues
-- Periodically to ensure settings persist
+Fetches the DisplayLink driver archive under the name the nixpkgs `displaylink`
+package expects, so `work-laptop` builds without a manual fetch. For a dock, not
+for a laptop's internal panel.
 
-See [PERFORMANCE.md](../documentation/PERFORMANCE.md) for details on each optimization.
+### `partition-drive.sh <device>`
 
-### `partition-drive.sh`
-Automatically partition a drive for NixOS installation. This script handles all partitioning automatically - you just specify which drive to use.
+Wipes the named device and lays out a NixOS install: GPT for UEFI, an ESP, a swap
+partition, and the rest as root, formatted and mounted under `/mnt`.
 
-**Usage:**
-```bash
-sudo ./scripts/partition-drive.sh <device>
-```
+It destroys everything on the device. Check the name with `lsblk` first, and do
+not run it against a disk that holds another system.
 
-**Examples:**
-```bash
-# Partition /dev/sda for NixOS
-sudo ./scripts/partition-drive.sh /dev/sda
+The wallpaper generators (`create-*-wallpaper.sh`) produce the assets used by
+the wallpaper module. They are build-time conveniences, not gates.
 
-# Partition an NVMe drive
-sudo ./scripts/partition-drive.sh /dev/nvme0n1
-```
+## Conventions
 
-**Warning:** This script will **destroy all data** on the target device.
-
-**What it does automatically:**
-1. Detects firmware type (UEFI or BIOS)
-2. Wipes the target device
-3. Creates partition table (GPT for UEFI, MBR for BIOS)
-4. Creates boot partition (512M)
-5. Creates swap partition (8G)
-6. Creates root partition (remaining space)
-7. Formats all partitions with appropriate filesystems
-8. Mounts partitions at /mnt ready for installation
-
-After running this script, you're ready to install:
-```bash
-nixos-generate-config --root /mnt
-nano /mnt/etc/nixos/configuration.nix
-nixos-install
-```
-
-## Tips
-
-- Make scripts executable: `chmod +x scripts/*.sh`
-- Run from repository root for best results
-- Most scripts require sudo/root privileges
-- Check script comments for detailed usage information
+- Run from the repository root. Most helpers resolve paths relative to it.
+- Anything needing root says so in its usage line and refuses when it lacks it.
+- A script that writes to the tree shows the change and asks first.
