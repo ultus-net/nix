@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- Documentation is written for the owner, not for a contributor. `README.md` is
+  the front page, and every page states what the tree does and why. Second-person
+  tutorial tone, "getting started" framing and the contributor workflow are gone.
 - Repository renamed from `nixos-base` to `nix`: GitHub URL, ghcr image
   (`ghcr.io/ultus-net/nix-dev`), clone paths in docs, and the `system.autoUpgrade`
   flake path, which is now `/home/hunter/Documents/nix`. **Action on each host:**
@@ -35,6 +38,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 
+- `documentation/CONTRIBUTING.md`. The repository is public as a worked example
+  and does not take pull requests, so a contribution guide described a workflow
+  that does not exist.
 - COSMIC, GNOME and Cinnamon support: their `roles/` bundles and `modules/`,
   the `nixos-cosmic` input, `scripts/export-cosmic.sh` and
   `documentation/QUICK-INSTALL-COSMIC.md`. KDE, Hyprland and XFCE remain.
@@ -95,7 +101,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The auto-upgrade unit trusts only its configured checkout (`safe.directory`
   names that path) rather than every repository git can see.
 
-### Added - Performance Optimizations (January 2026)
+### Added - Performance Optimizations (January 2026, superseded)
+
+The tuning below was added in one pass and later narrowed. `mitigations=off`,
+`tsc=reliable`, `clocksource=tsc`, the kyber scheduler and `ntsync.enable=1` are
+removed, and the remaining set is opt-in per host through
+`gaming.kernelTuning`. `documentation/PERFORMANCE.md` lists what is in effect
+now. Everything here is kept as history.
 
 #### System-Level Improvements
 - **zram compression swap**: 8GB max with zstd algorithm for better memory management and reduced SSD wear

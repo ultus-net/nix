@@ -9,7 +9,7 @@ untrusted code safely: the container shares the host kernel.
 | Boundary | How |
 | --- | --- |
 | Filesystem | Root is a read-only store tree. Only the chosen project is mounted read-write, at `/workspace`. The agent home is a tmpfs, gone when the session ends. |
-| Users | `--private-users=<your uid>:1` maps exactly one uid. Inside, the container's root *is* you on the host, so files it writes in the project are yours. Every other host uid is unmapped and appears as nobody. |
+| Users | `--private-users=<uid>:1` maps exactly one uid. Inside, the container's root *is* the invoking user on the host, so files it writes in the project are owned by that user. Every other host uid is unmapped and appears as nobody. |
 | Processes | Private PID, mount, IPC, UTS and network namespaces. `ps` inside shows only the session. |
 | Network | `--private-network`: loopback only. There is no veth, no NAT, and therefore no route to the internet. |
 | Egress | One unix socket, bind-mounted from the host, bridged to `127.0.0.1:3128` inside. The host side is an allowlisting `CONNECT` proxy. |
@@ -35,11 +35,11 @@ Matching is on label boundaries, so `evil-example.com` and
 ## What it does not do
 
 - It is a container, not a VM. A kernel bug or a container escape reaches the
-  host as your uid. Moving the same workload into a libvirt VM is the next step
-  if that matters.
+  host as the invoking uid. Moving the same workload into a libvirt VM is the
+  next step if that matters.
 - It does not hide the project. The agent can read and write everything under
-  the directory you pass to `run`, including `.git`. Point it at a checkout, not
-  at your home directory.
+  the directory passed to `run`, including `.git`. Point it at a checkout, not
+  at the home directory.
 - It does not store a credential. Each session completes the agent's device
   flow itself, inside the tmpfs home, and the token dies with the tmpfs.
 - It does not survive a restart. Nothing is persisted outside the project.
@@ -60,8 +60,8 @@ sudo agent-sandbox run ~/Projects/some-checkout
 ```
 
 The caller's uid comes from `SUDO_UID`. That uid is the one mapped inside, so
-the agent's writes land in the project as you. Refused values: a missing
-`SUDO_UID`, a project path of `/`, and a path under `/nix`.
+the agent's writes in the project are owned by that user. Refused values: a
+missing `SUDO_UID`, a project path of `/`, and a path under `/nix`.
 
 ## Adding a host to the allowlist
 

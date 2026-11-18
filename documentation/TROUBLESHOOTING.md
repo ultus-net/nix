@@ -1,231 +1,171 @@
-# Troubleshooting Guide
+# Troubleshooting
 
-Common issues and solutions when using nix.
+Failures already hit on these machines, with the fix that worked. Written after
+the fact, so each entry names the symptom rather than the cause.
 
-## Installation Issues
+## Installation
 
-### "No space left on device" during installation
+**`experimental Nix feature 'nix-command' is disabled`**
 
-**Problem:** The `/boot` partition is too small or full.
+The installer environment, not the installed system. Add the flags:
 
-**Solution:**
 ```bash
-# Check boot partition usage
-df -h /boot
-
-# If full, clean old generations before installing
-nix-collect-garbage -d
+nix --extra-experimental-features 'nix-command flakes' flake show /mnt/nix
 ```
 
-### "Permission denied" when running nixos-install
+**`does not provide attribute`**
 
-**Problem:** Not running as root.
+The name after `#` is not a host. `nix flake show /mnt/nix` lists them, and the
+attribute matches the directory under `hosts/`, except `base-server`, which is a
+role-only output.
 
-**Solution:**
+**Installs, then does not boot**
+
+`/mnt/boot` was not mounted during the install, or `hardware.nix` names a
+bootloader the firmware cannot use. Each role ships placeholder `fileSystems`
+values with `lib.mkDefault`, so a placeholder `hardware.nix` silently wins over
+nothing.
+
+**No space left on device, during install**
+
+`/boot` is too small for the kernel and initrd set. Check with `df -h /boot`,
+and give it 1 GiB on a machine that keeps several generations.
+
+## First login
+
+**Login is impossible after the first boot**
+
+Expected. No password hash is committed for a real host, so the account is
+locked. On the console:
+
 ```bash
-sudo nixos-install --flake /mnt/nix#tower
+passwd hunter
 ```
 
-### Flake evaluation fails with "does not provide attribute"
+An SSH-only machine needs `users.users.hunter.openssh.authorizedKeys.keys` set in
+the host config instead.
 
-**Problem:** Typo in the host name.
+## Desktop
 
-**Solution:**
+**`display-manager.service` fails**
+
+`journalctl -xeu display-manager.service` first. The usual cause is a role
+imported twice, or a host whose `hardware.nix` sets the GPU options while
+`modules/nvidia.nix` sets them again.
+
+**KDE starts on X11**
+
+`kde.enableWayland` and `kde.enableXWayland` are both options on `modules/kde.nix`
+and both default on. A host that sets one off in its own config wins.
+
+## Network
+
+**No network after boot**
+
+NetworkManager is in `modules/networking.nix`, which every role imports.
+`systemctl status NetworkManager`, then `nmtui`.
+
+**Containers lose their network after an nftables change**
+
+`networking.nftables.enable` is off on purpose. The nixpkgs manual warns that the
+nftables backend fights Docker's iptables NAT, and `tower` runs Docker. Leave it
+off, and give a service its own port rule instead.
+
+**SSH refuses a connection**
+
+`sshd` and the firewall come from `modules/security.nix`, with password
+authentication and root login off. A refused connection is usually a missing key,
+not a closed port: check `/etc/ssh/sshd_config` for the key, then
+`journalctl -u sshd`.
+
+## Builds
+
+**`hash mismatch`**
+
+The cached hash does not match the download. `nix-store --verify
+--check-contents --repair` fixes a damaged store; a real mismatch means the
+upstream content moved, which for a pinned input is a reason to bump it
+deliberately with `nix flake lock --update-input <input>`.
+
+**Out of memory during a build**
+
 ```bash
-# List available configurations
-nix flake show /mnt/nix
-
-# The attribute is the host name from hosts/<name>/
-nixos-install --flake /mnt/nix#tower
-```
-
-## Desktop Environment Issues
-
-### KDE Plasma: Wayland session not available
-
-**Problem:** Wayland not enabled or missing dependencies.
-
-**Solution:**
-In your machine config:
-```nix
-kde.enableWayland = true;
-```
-
-### Display manager doesn't start after installation
-
-**Problem:** Missing or misconfigured display manager.
-
-**Solution:**
-1. Check logs: `journalctl -xeu display-manager.service`
-2. Verify X11/Wayland service is running
-3. Try switching to TTY (Ctrl+Alt+F2) and rebuild:
-   ```bash
-   sudo nixos-rebuild switch
-   ```
-
-## Network Issues
-
-### No internet connection after boot
-
-**Problem:** Network manager not enabled or not started.
-
-**Solution:**
-The base configuration enables NetworkManager by default, but check:
-```bash
-# Check NetworkManager status
-systemctl status NetworkManager
-
-# If not running, start it
-sudo systemctl start NetworkManager
-
-# Connect to WiFi
-nmtui
-```
-
-### SSH connection refused
-
-**Problem:** SSH not enabled or firewall blocking.
-
-**Solution:**
-In `modules/base.nix`, SSH is enabled by default but verify:
-```nix
-services.openssh.enable = true;
-networking.firewall.allowedTCPPorts = [ 22 ];
-```
-
-## Build/Update Issues
-
-### "hash mismatch" when updating
-
-**Problem:** Cached hash doesn't match actual download.
-
-**Solution:**
-```bash
-# Clear nix store cache
-nix-store --verify --check-contents --repair
-
-# Or re-fetch with updated hash
-nix flake lock --update-input nixpkgs
-```
-
-### "out of memory" during build
-
-**Problem:** Not enough RAM for build.
-
-**Solution:**
-```bash
-# Limit parallel builds
 nixos-rebuild switch --option max-jobs 1 --option cores 2
-
-# Or add swap space temporarily
-sudo fallocate -l 4G /swapfile
-sudo chmod 600 /swapfile
-sudo mkswap /swapfile
-sudo swapon /swapfile
 ```
 
-### Rebuild takes forever on slow connection
+ZRAM absorbs some of it, but a large Rust or Chromium build still wants real
+swap.
 
-**Problem:** Downloading many packages from cache.
+**The build downloads everything again**
 
-**Solution:**
+A changed `flake.lock` means a different store closure. `nix flake metadata` shows
+the current pins, and `nixos-rebuild dry-build --flake .#tower` shows what would
+be fetched before it starts.
+
+## Home Manager
+
+**`Collision between ...`**
+
+The same file is declared twice, usually a package in
+`environment.systemPackages` and again in `home.packages`. Remove one.
+
+**`home-manager-hunter.service` fails**
+
+`journalctl --user -xeu home-manager-hunter.service`. The unit runs on every
+switch, so a failure here is an evaluation error in the HM profile, not a system
+fault. `home-manager build` gives the error without touching the running system.
+
+## Recovery
+
+**A rebuild leaves the system unbootable**
+
+Pick the previous generation at the boot menu, then:
+
 ```bash
-# Use a mirror
-nix-channel --add https://nixos.org/channels/nixos-unstable nixos
-
-# Or build without substitutes (will compile locally)
-nixos-rebuild switch --option substitute false
+sudo nixos-rebuild switch --rollback
 ```
 
-## Home Manager Issues
+**A user change locks the account out**
 
-### "Collision between..." package conflicts
+TTY on `Ctrl+Alt+F2`, or boot the previous generation. `sudo passwd hunter`
+restores a login without a rebuild.
 
-**Problem:** Same package installed both system-wide and via Home Manager.
+**The system needs a rescue**
 
-**Solution:**
-Remove duplicate from either:
-- `environment.systemPackages` in your machine config, OR
-- `home.packages` in your Home Manager config
+Boot the live ISO, mount the root and boot partitions under `/mnt`, fix the
+checkout, and rerun `nixos-install --root /mnt --flake /mnt/nix#tower`.
 
-### Home Manager service fails to start
+## CI
 
-**Problem:** Syntax error or missing imports.
+**`systemctl is-enabled <unit>` fails in a host test**
 
-**Solution:**
-```bash
-# Check home-manager logs
-journalctl --user -xeu home-manager-<username>.service
+A unit can be `linked` and still not `enabled`, so `is-enabled` exits 1 on a
+correct system. `fwupd.service` on `work-laptop` is exactly that: the module
+links it, the host does not enable it. Assert a unit the host actually enables,
+or assert the state that is meant.
 
-# Validate configuration
-home-manager build
-```
+**A host test is cancelled next to a failure**
 
-## Recovery Options
+`nix flake check` aborts sibling checks when one fails. The cancelled test is the
+same failure, not a second one. Fix the reported assertion and rerun.
 
-### System won't boot after update
+**Flake check passes locally but nothing builds**
 
-**Solution:**
-1. At GRUB menu, select previous generation
-2. Once booted:
-   ```bash
-   # List generations
-   nix-env --list-generations --profile /nix/var/nix/profiles/system
-   
-   # Rollback to previous
-   sudo nixos-rebuild --rollback switch
-   ```
+Local evaluation and a local build are different things. On this workstation
+`nix` has no `/nix/store` outside the workspace, so evaluation works and every
+build fails on a missing path. The build job is where a build is proved.
 
-### Can't login after user configuration change
-
-**Solution:**
-1. Boot into recovery mode (select from GRUB)
-2. Or use TTY (Ctrl+Alt+F2)
-3. Check user configuration:
-   ```bash
-   sudo cat /etc/passwd | grep <username>
-   ```
-
-### Complete system rescue
-
-**Solution:**
-1. Boot from NixOS live ISO
-2. Mount your system:
-   ```bash
-   mount /dev/sdaX /mnt
-   mount /dev/sdaY /mnt/boot
-   ```
-3. Fix configuration and reinstall:
-   ```bash
-   nixos-install --root /mnt --flake /mnt/nix#tower
-   ```
-
-## Getting More Help
-
-1. Check NixOS manual: https://nixos.org/manual/nixos/stable/
-2. Search NixOS Discourse: https://discourse.nixos.org/
-3. NixOS Wiki: https://nixos.wiki/
-4. Open an issue: https://github.com/ultus-net/nix/issues
-
-## Debugging Commands
+## Commands worth remembering
 
 ```bash
-# Check system configuration
-nixos-option system.stateVersion
-
-# List all available options
-nixos-option -r services
-
-# Show what would be built/downloaded
-nixos-rebuild dry-build
-
-# Test configuration without making it default
-sudo nixos-rebuild test
-
-# Validate flake without building
-nix flake check
-
-# Show flake info
-nix flake metadata
+journalctl -b -u <unit>          # one service, this boot
+journalctl -xe                   # the tail of everything
+nixos-rebuild dry-build --flake .#tower
+nixos-rebuild test --flake .#tower
 nix flake show
+nix flake metadata
+nixos-option services.openssh
 ```
+
+The NixOS manual is the authority for an option's meaning:
+<https://nixos.org/manual/nixos/stable/>.

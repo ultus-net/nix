@@ -1,207 +1,108 @@
-# Usage Guide
+# Usage
 
-## TL;DR
+Day-to-day operation of an installed host: rebuild, switch a desktop, enable a
+module, update, roll back.
 
-```bash
-# Switch desktops (already installed system)
-sudo nixos-rebuild switch --flake .#tower
-
-# Update packages
-nix flake update && sudo nixos-rebuild switch --flake .#your-host
-
-# Test in VM before deploying
-nix build .#nixosConfigurations.tower.config.system.build.vm
-./result/bin/run-*-vm
-
-# Create custom machine config (advanced)
-cp hosts/example/default.nix hosts/my-machine/default.nix
-# Edit my-machine.nix, then reference it in flake.nix
-```
-
-## Quick Start
-
-### For New Installations
-
-1. Boot the NixOS live ISO
-2. Partition and mount your disk to `/mnt`
-3. Clone this repository:
-   ```bash
-   cd /mnt
-   git clone https://github.com/ultus-net/nix
-   ```
-4. Generate hardware configuration:
-   ```bash
-   nixos-generate-config --root /mnt
-   ```
-5. Install a host:
-   ```bash
-   nixos-install --flake /mnt/nix#tower
-   ```
-
-See `INSTALL.md` for detailed installation instructions.
-
-## Switching Desktops
-
-A host chooses its desktop by the role it imports. Edit the host entry point,
-change the role, then rebuild:
+## Rebuild
 
 ```bash
-# hosts/tower/default.nix imports ../../roles/kde.nix
 sudo nixos-rebuild switch --flake .#tower
 ```
 
-Available roles are `roles/kde.nix`, `roles/hyprland.nix`, `roles/xfce.nix`
-and `roles/base.nix` for a headless host. `scripts/switch-desktop.sh <desktop>
-[host]` rewrites the host's role import and rebuilds that host.
+`switch` activates immediately. `boot` makes the change take effect on the next
+boot, which is what a kernel or NVIDIA change wants. `test` activates without
+touching the boot entry, so a reboot undoes it.
 
-### Test Without Switching
+Two build-only forms, for checking a change without touching the running system:
+
 ```bash
-# Build without activating
 nixos-rebuild build --flake .#tower
-
-# Or using nix directly
 nix build .#nixosConfigurations.tower.config.system.build.toplevel
 ```
 
-## Helper Scripts
+## Switch desktop
 
-### Switch Host Script
-Use the provided script to build or switch configurations:
+A host picks its desktop by the role it imports. There is no runtime switch: the
+role is a build input.
 
-```bash
-# Build the default configuration
-./scripts/switch-host.sh
-
-# Switch a host (requires root)
-sudo ./scripts/switch-host.sh .#tower
-sudo ./scripts/switch-host.sh .#work-laptop
-```
-
-### Desktop Switcher
-```bash
-# Interactive desktop environment switcher
-./scripts/switch-desktop.sh
-```
-
-### Validation
-```bash
-# Validate configurations before deploying
-./scripts/validate-hosts-home-manager.sh
-```
-
-See `scripts/README.md` for complete script documentation.
-
-## Creating Your Own Machine Configuration
-
-**When do you need this?** 
-- You want to customize beyond what roles offer
-- You're setting up multiple machines with different hardware
-- You want machine-specific settings (hostname, users, hardware config)
-
-**Don't need this if:**
-- You just want to use a pre-built desktop (import a role)
-- You're testing different desktops (just change the role import)
-
-### Steps:
-
-1. Copy the example machine template:
-   ```bash
-   cp hosts/example/default.nix hosts/my-machine/default.nix
-   ```
-
-2. Edit `hosts/my-machine/default.nix`:
-   ```nix
-   { config, pkgs, lib, inputs, ... }:
-   {
-     imports = [
-       ../../modules/base.nix        # Shared defaults
-       ./hardware.nix                # Your hardware config
-       ../../roles/kde.nix           # Choose your desktop
-     ];
-
-     # Set your hostname
-     networking.hostName = "my-machine";
-
-     # Add your user
-     users.users = {
-       yourname = {
-         enable = true;
-         isAdmin = true;
-         shell = pkgs.bash;
-       };
-     };
-   }
-   ```
-
-3. Add to `flake.nix`:
-   ```nix
-   nixosConfigurations = {
-     # ... existing configs ...
-     my-machine = mkSystem ./hosts/my-machine/default.nix;
-   };
-   ```
-
-4. Build and switch:
-   ```bash
-   sudo nixos-rebuild switch --flake .#my-machine
-   ```
-
-See `hosts/README.md` for detailed machine configuration guide.
-
-## Enabling Optional Modules
-
-### Add Multimedia Support
 ```nix
+# hosts/tower/default.nix
 imports = [
-  ../modules/multimedia.nix
+  ./hardware.nix
+  ../../roles/kde.nix    # kde, hyprland, xfce, or base
 ];
+```
 
+`scripts/switch-desktop.sh <desktop> [host]` rewrites that import line and
+rebuilds. The valid names are `kde`, `hyprland`, `xfce` and `base`.
+
+Building one desktop to look at it, without changing what the host runs:
+
+```bash
+nix build .#nixosConfigurations.tower.config.system.build.vm
+./result/bin/run-nixos-vm
+```
+
+`hosts/example/` is a skeleton host with the option groups commented out. It is
+there to be copied when a new machine joins; CI does not build it.
+
+## Enable a module
+
+Modules are opt-in, and most are guarded by an option under `machines.*`,
+`gaming.*` or the module's own namespace. The import alone is not always enough.
+
+```nix
+imports = [ ../../modules/gaming.nix ];
+
+gaming.enable = true;
+gaming.kernelTuning = true;   # opt-in; never disables CPU mitigations
+```
+
+```nix
+imports = [ ../../modules/multimedia.nix ];
 multimedia.enable = true;
 ```
 
-### Add Gaming Support
-```nix
-imports = [
-  ../modules/gaming.nix
-];
+Three modules apply their defaults on import and take no option:
+`development.nix`, `laptop.nix` and `common-packages.nix`. `modules/README.md`
+holds the inventory, and `FEATURES.md` describes what each one installs.
 
-gaming.enable = true;
-gaming.enableSteam = true;
-```
+## Update
 
-### Add Development Tools
-```nix
-imports = [
-  ../modules/development.nix
-];
-```
+`tower` and `work-laptop` set `machines.autoUpgrade.enable`. The unit fetches
+`origin/main`, fast-forwards the checkout, and rebuilds. A commit reaches a
+machine only after it passed CI, because the fast-forward only takes what is on
+the remote branch.
 
-### Laptop Configuration
-```nix
-imports = [
-  ../modules/laptop.nix
-];
-```
-
-See `FEATURES.md` for all available modules.
-
-## Testing in a VM
-
-Build and run a VM to test configurations before deploying:
+Input updates stay manual, so a nixpkgs bump is a reviewed change:
 
 ```bash
-# Build VM
-nix build .#nixosConfigurations.work-laptop.config.system.build.vm
-
-# Run VM
-./result/bin/run-*-vm
+nix flake update                          # all inputs
+nix flake lock --update-input nixpkgs     # one input
+sudo nixos-rebuild switch --flake .#tower
 ```
 
-## Agent Sessions
+## Roll back
+
+```bash
+sudo nix-env --list-generations --profile /nix/var/nix/profiles/system
+sudo nixos-rebuild switch --rollback
+```
+
+A specific generation:
+
+```bash
+sudo nix-env --switch-generation 42 --profile /nix/var/nix/profiles/system
+sudo /nix/var/nix/profiles/system/bin/switch-to-configuration switch
+```
+
+`nix.gc` keeps three system generations and collects store paths older than 14
+days, so the rollback window is short by design.
+
+## Agent sessions
 
 `tower` and `work-laptop` install `agent-sandbox`. It runs an agent against one
-checkout in a throwaway container with no route to the internet except an
-allowlisting proxy:
+checkout in a throwaway container whose only route out is an allowlisting proxy.
 
 ```bash
 sudo agent-sandbox run ~/Projects/some-checkout          # interactive shell
@@ -210,72 +111,28 @@ agent-sandbox list
 agent-sandbox stop --all
 ```
 
-What the session can reach, what it cannot, and the first-run checks are in
-[AGENT-SANDBOX.md](AGENT-SANDBOX.md).
+[AGENT-SANDBOX.md](AGENT-SANDBOX.md) states the boundary, what it refuses, and
+the first-run checks.
 
-## Updating Your System
+## Before pushing
 
-A host with `machines.autoUpgrade.enable` rebuilds from `origin/main` on its own
-schedule, after fast-forwarding the checkout, so only commits that passed CI
-reach it. To update by hand:
+CI runs the same gates, so a local run is the cheaper copy:
 
 ```bash
-# Update all inputs
-nix flake update
-
-# Update specific input
-nix flake lock --update-input nixpkgs
+python3 scripts/check-layering.py
+python3 scripts/check-layering.py --self-test
+bash scripts/check-no-password-hash.sh .
+python3 tests/agent-sandbox-proxy.py
+nix flake check          # boots one VM per host, so it is the slow one
 ```
 
-### Rebuild After Update
-```bash
-sudo nixos-rebuild switch --flake .#your-host
-```
+`bash -n scripts/*.sh` catches a shell syntax error without a build. The
+`flake check` form is what gates `main`, and it takes 15 to 25 minutes because
+each host test boots a real system in QEMU.
 
-## Rolling Back
+## Failure
 
-If something goes wrong, you can rollback to a previous generation:
-
-```bash
-# List available generations
-sudo nix-env --list-generations --profile /nix/var/nix/profiles/system
-
-# Rollback to previous generation
-sudo nixos-rebuild switch --rollback
-
-# Switch to specific generation
-sudo nix-env --switch-generation <number> --profile /nix/var/nix/profiles/system
-sudo /nix/var/nix/profiles/system/bin/switch-to-configuration switch
-```
-
-## Local Testing
-
-Before pushing changes, test locally:
-
-```bash
-# Quick validation
-nix flake check
-
-# Build specific configuration
-nix build .#nixosConfigurations.tower.config.system.build.toplevel
-
-# Test VM boot
-nix build .#nixosConfigurations.work-laptop.config.system.build.vm
-./result/bin/run-*-vm
-```
-
-## Troubleshooting
-
-If you encounter issues:
-
-1. Check `TROUBLESHOOTING.md` for common problems and solutions
-2. Review logs: `journalctl -xe`
-3. Verify configuration: `nixos-rebuild dry-run --flake .#your-host`
-4. Ask for help in the NixOS community channels
-
-## Next Steps
-
-- Read `FEATURES.md` to explore available modules
-- Check `CONTRIBUTING.md` to add your own customizations
-- Review `SECRETS.md` for secrets management
-- Explore `modules/README.md` for module documentation
+`journalctl -b -u <unit>` for a service, `journalctl -xe` for the tail of
+everything. `nixos-rebuild dry-run --flake .#tower` prints what a switch would
+change. `TROUBLESHOOTING.md` holds the failures already hit here, with their
+fixes.

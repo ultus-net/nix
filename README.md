@@ -1,72 +1,92 @@
 # nix
 
-![Flake validation](https://github.com/ultus-net/nix/actions/workflows/flake-check.yml/badge.svg)
+A NixOS flake for three machines and the roles they compose. The repository is
+public as a worked example of host → role → module layering. It is not open to
+pull requests: it configures my hardware, and a change lands here because this
+machine needs it.
 
-A modular NixOS flake for desktop workstations, servers, and multiple desktop environments.
+## Hosts
 
-## Quick Start
+| Host | Desktop | What it is |
+| --- | --- | --- |
+| `tower` | KDE | Home workstation. NVIDIA, the games drive, Docker, libvirt, PINCE. |
+| `work-laptop` | KDE | Laptop. TLP, fwupd, DisplayLink, the work toolchain. |
+| `base-server` | none | Headless. A role-only output, so it cannot rot unnoticed. |
 
-For a manual installation:
-```bash
-# Clone and install during NixOS installation
-cd /mnt && git clone https://github.com/ultus-net/nix
-nixos-install --flake /mnt/nix#tower
+`nixosConfigurations` carries all three. `homeConfigurations."hunter@x86_64-linux"`
+is the Home Manager profile, and `dev-image` is the toolchain container published
+to `ghcr.io/ultus-net/nix-dev`.
+
+## Layout
+
+```
+nix/
+├── flake.nix               # inputs, outputs, checks
+├── hosts/                  # one directory per machine: hardware + identity + role choice
+├── roles/                  # desktop and server compositions (kde, hyprland, xfce, base)
+├── modules/                # host-agnostic pieces, each guarded by an option
+├── pkgs/                   # sources a module installs (agent-sandbox, others)
+├── home/                   # Home Manager profiles
+├── tests/                  # one nixosTest per host, plus the proxy unit test
+├── containers/dev/         # toolchain image, built with dockerTools
+├── scripts/                # gates and helpers CI runs
+└── documentation/          # the pages linked below
 ```
 
-After the first boot:
+A host imports a role. A role imports modules. Nothing under `roles/` or
+`modules/` may name a path under `hosts/`, and
+`scripts/check-layering.py` fails CI when one does.
+
+## Install
+
+Install a host from a NixOS live ISO:
+
 ```bash
-sudo passwd yourusername  # Set your password (REQUIRED)
+git clone https://github.com/ultus-net/nix.git /mnt/nix
+nixos-install --root /mnt --flake /mnt/nix#tower
 ```
 
-See [INSTALL.md](documentation/INSTALL.md) for the full installation procedure.
+The account starts locked. Set the first password on the console after the
+reboot:
 
-## Desktop Environments
+```bash
+passwd hunter
+```
 
-| Desktop | Display | Weight | Description |
-|---------|---------|--------|-------------|
-| **KDE** | Wayland/X11 | Heavy | Feature-rich Plasma 6 |
-| **XFCE** | X11 | Light | Lightweight desktop environment |
-| **Hyprland** | Wayland | Light | Dynamic tiling Wayland compositor |
-| **Base** | None | Minimal | Headless server |
+[INSTALL.md](documentation/INSTALL.md) carries the partitioning example, the LUKS
+variant, and the post-install checks.
+
+## Update
+
+`tower` and `work-laptop` fast-forward their checkout to `origin/main` and
+rebuild with `system.autoUpgrade`, so only commits that passed CI reach a
+machine. `machines.autoUpgrade` records the schedule and the checkout path.
+Input updates stay manual: `nix flake update`, then a rebuild.
 
 ## Documentation
 
-### Getting Started
-- **[INSTALL.md](documentation/INSTALL.md)** - Manual installation
-- **[USAGE.md](documentation/USAGE.md)** - Day-to-day usage and examples
-- **[FEATURES.md](documentation/FEATURES.md)** - Available desktops and modules
+| Page | Covers |
+| --- | --- |
+| [INSTALL.md](documentation/INSTALL.md) | Partitioning, `nixos-install`, first password, verification |
+| [USAGE.md](documentation/USAGE.md) | Rebuilds, desktops, updates, rollback, agent sessions |
+| [FEATURES.md](documentation/FEATURES.md) | Every module and what enables it |
+| [ARCHITECTURE.md](documentation/ARCHITECTURE.md) | Layering, outputs, and why the tree looks like this |
+| [AGENT-SANDBOX.md](documentation/AGENT-SANDBOX.md) | What an agent session can reach, and what it cannot |
+| [PERFORMANCE.md](documentation/PERFORMANCE.md) | Gaming and kernel tuning, all opt-in |
+| [SECRETS.md](documentation/SECRETS.md) | Credentials and where they live |
+| [TROUBLESHOOTING.md](documentation/TROUBLESHOOTING.md) | Failures already hit, and their fixes |
+| [FAQ.md](documentation/FAQ.md) | Decisions this tree encodes, and why |
+| [CI-CD-GUIDE.md](.github/CI-CD-GUIDE.md) | What each workflow proves |
+| [modules/](modules/README.md) | The module inventory |
+| [roles/](roles/README.md) | The desktop roles |
+| [hosts/](hosts/README.md) | Host conventions and overrides |
+| [home/](home/README.md) | The Home Manager profiles |
+| [scripts/](scripts/README.md) | Each script and its gate |
+| [containers/dev/](containers/dev/README.md) | The toolchain image |
 
-### Advanced Topics
-- **[PERFORMANCE.md](documentation/PERFORMANCE.md)** - Gaming and performance tuning
-- **[AGENT-SANDBOX.md](documentation/AGENT-SANDBOX.md)** - Isolated agent sessions, allowlisted egress
-- **[ARCHITECTURE.md](documentation/ARCHITECTURE.md)** - Repository structure and design
-- **[TROUBLESHOOTING.md](documentation/TROUBLESHOOTING.md)** - Common issues and solutions
-- **[CONTRIBUTING.md](documentation/CONTRIBUTING.md)** - How to contribute
+## Checks
 
-### Module Docs
-- [modules/](modules/README.md) - Audio, gaming, virtualization, etc.
-- [roles/](roles/README.md) - Desktop environment roles
-- [hosts/](hosts/README.md) - Machine configuration guide
-- [home/](home/README.md) - Home Manager setup
-- [scripts/](scripts/README.md) - Helper scripts
-- [containers/](containers/dev/README.md) - Dev container image
-
-## Features
-
-- Modular roles for gaming, multimedia, development, and desktop environments
-- CLI tooling including fzf, zoxide, eza, bat, ripgrep, and starship
-- Home Manager integration for user configuration
-- Optional gaming and system performance settings
-- VM tests and automated flake validation
-
-## Contributing
-
-See [CONTRIBUTING.md](documentation/CONTRIBUTING.md) for development and contribution guidelines.
-
-## Support
-
-- [TROUBLESHOOTING.md](documentation/TROUBLESHOOTING.md) - Common issues
-- [FAQ.md](documentation/FAQ.md) - Frequently asked questions
-- GitHub Issues - Bug reports and questions
-
-This configuration uses [NixOS](https://nixos.org/) and [Home Manager](https://github.com/nix-community/home-manager).
+`nix flake check` runs the layering gate, the password gate, the proxy unit test,
+and one `nixosTest` per host that boots the real host module in QEMU. The build
+job then builds each host's toplevel. `.github/workflows/ci.yml` is the only
+workflow that gates `main`.

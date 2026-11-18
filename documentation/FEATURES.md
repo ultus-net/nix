@@ -1,283 +1,115 @@
-# Features
+# Module inventory
 
-## Desktop Environments
+Every module is opt-in. A host imports it, then sets its option. Three modules
+have no option and apply their defaults on import; the rest are inert until
+enabled.
 
-This flake provides **3 desktop environments** plus a **headless base profile**:
+| Module | Option | Applies on import |
+| --- | --- | --- |
+| `base.nix` | none | yes |
+| `common-packages.nix` | `commonPackages.enable` | no |
+| `development.nix` | none | yes |
+| `laptop.nix` | none | yes |
+| `networking.nix` | none | yes |
+| `security.nix` | none | yes |
+| `audio.nix` | none | yes |
+| `fonts.nix` | none | yes |
+| `zram.nix` | `machines.zram.*` | yes (imported by `base.nix`) |
+| `home-manager.nix` | none | yes |
+| `multimedia.nix` | `multimedia.enable` | no |
+| `gaming.nix` | `gaming.enable` | no |
+| `containers.nix` | `machines.containers.enable` | no |
+| `virtualization.nix` | `virtualization.enable` | no |
+| `sysadmin.nix` | `sysadmin.enable` | no |
+| `nvidia.nix` | none | yes |
+| `pince.nix` | `pince.enable` | no |
+| `wallpapers.nix` | `machines.wallpapers.enable` | no |
+| `agent-sandbox.nix` | `machines.agentSandbox.enable` | no |
+| `auto-upgrade.nix` | `machines.autoUpgrade.enable` | no |
+| `deploy-config.nix` | `deployConfig.enable` | no |
 
-### Desktop Environment Details
+The desktops are roles, not modules: `roles/kde.nix`, `roles/hyprland.nix`,
+`roles/xfce.nix`, `roles/base.nix`. `modules/kde.nix`, `modules/xfce.nix` and
+`modules/hyprland.nix` are what those roles compose.
 
-#### Base Server (`base-server`)
-**Display Server:** None (headless)  
-**Resource Usage:** Minimal (~500MB RAM)  
-**Use Cases:** Servers, containers, VMs, network appliances
+## Defaults every host inherits
 
-**What's Included:**
-- Essential CLI tools (htop, btop, git, vim, tmux)
-- Modern CLI replacements (ripgrep, eza, bat, delta, fzf)
-- SSH server with hardened security
-- NetworkManager for network configuration
-- ZRAM compressed swap
+`modules/base.nix` sets the parts that must not be per-host: `stateVersion`, the
+`nix-command` and `flakes` features, `nix.gc`, and the locale. `networking.nix`
+adds NetworkManager. `security.nix` enables the firewall and sshd with password
+authentication and root login off. `audio.nix` is PipeWire, `fonts.nix` the Nerd
+Fonts, `zram.nix` compressed swap, `home-manager.nix` the HM wiring.
 
-#### KDE Plasma (`roles/kde.nix`)
-**Display Server:** Wayland (X11 available)
-**Resource Usage:** Heavy (~4GB RAM)
-**Use Cases:** Configurable Qt-based desktops
+## Packages
 
-**What's Included:**
-- KDE Plasma 6 desktop
-- Full KDE app suite (Dolphin, Konsole, Kate, Okular, Gwenview, etc.)
-- Discover software center
-- KWallet password manager
-- Firefox, VS Code
-- Extensive customization options
+`common-packages.nix` is the CLI set: `fzf`, `zoxide`, `eza`, `bat`, `ripgrep`,
+`fd`, `lazygit`, `delta`, `starship`. It is a list, so a host adds to it rather
+than forking it.
 
-#### XFCE (`roles/xfce.nix`)
-**Display Server:** X11  
-**Resource Usage:** Light (~1.5GB RAM)  
-**Use Cases:** Lightweight desktop installations
+`development.nix` is the toolchain: Python, Node, Go, Rust, the build tools, the
+formatters and the linters. It has no option because a machine that imports it
+wants all of it; a machine that wants half of it should import nixpkgs packages
+directly.
 
-**What's Included:**
-- XFCE desktop environment
-- Thunar file manager
-- XFCE Terminal
-- Firefox, VS Code
-- Lightweight desktop environment
-- PipeWire audio stack
+## Gaming
 
-#### Hyprland (`roles/hyprland.nix`)
-**Display Server:** Wayland  
-**Resource Usage:** Light (~2GB RAM)  
-**Use Cases:** Dynamic tiling workflows
+`gaming.nix` splits into three parts on purpose:
 
-**What's Included:**
-- Hyprland dynamic tiling compositor
-- Waybar status bar
-- Wofi application launcher
-- Kitty terminal
-- Firefox, VS Code
-- Advanced tiling features
-- PipeWire audio stack
+| Option | Default | Effect |
+| --- | --- | --- |
+| `gaming.enable` | `false` | Steam, Lutris, Heroic, MangoHUD, GameMode, `vkBasalt`, Wine, 32-bit drivers |
+| `gaming.enableSteam` | `false` | the NixOS `programs.steam` module, 32-bit graphics and controller udev rules |
+| `gaming.kernelTuning` | `false` | kernel, network and flatpak tuning on that host only |
 
+Everything is inside `lib.mkIf cfg.enable`, so `gaming.enable` gates the rest.
+Setting `kernelTuning = true` alone changes nothing; `tower` sets both.
 
-### Quick Comparison
+`gaming.kernelTuning` never disables CPU mitigations. The tuning it does apply
+lives in the host that opts in, so `work-laptop` does not inherit a gaming
+network stack.
 
-| Desktop | Display | Weight | Typical Use |
-|---------|---------|--------|-------------|
-| **Base** | None | Minimal | Servers and headless systems |
-| **KDE** | Both | Heavy | Configurable Qt desktop |
-| **XFCE** | X11 | Light | Lightweight desktop |
-| **Hyprland** | Wayland | Light | Dynamic tiling |
+## Multimedia
 
-Install any desktop with:
-```bash
-nixos-install --flake /mnt/nix#tower
-```
+`multimedia.nix` is the media set: VLC, MPV, OBS, Kdenlive, Handbrake, FFmpeg,
+GIMP, Inkscape, Krita, Darktable, ImageMagick, Audacity, Ardour, EasyEffects,
+Blender. Only `tower` imports it.
 
-See `roles/README.md` for detailed desktop environment documentation.
+## Containers and virtualisation
 
-## Optional Modules
+`containers.nix` gives Docker, `docker-compose`, `distrobox`, `buildah` and
+`skopeo`, with `kubectl`, `k9s` and `helm` behind `enableKubernetes`.
 
-### Multimedia (`multimedia.nix`)
-Media creation and editing tools.
+`virtualization.nix` gives `libvirt`, QEMU/KVM with the hardware acceleration
+flags, `virt-manager` and `virsh`, plus the libvirt default network.
 
-**What's Included:**
-- **Video:** VLC, MPV, OBS Studio, Kdenlive, Handbrake, FFmpeg
-- **Image:** GIMP, Inkscape, Krita, Darktable, ImageMagick
-- **Audio:** Audacity, Ardour, EasyEffects
-- **3D:** Blender
-- **Utilities:** youtube-dl, mediainfo
+`tower` imports both. `networking.nftables.enable` stays off because the nixpkgs
+manual warns the nftables backend fights Docker's iptables NAT.
 
-**Enable:**
-```nix
-imports = [ ../modules/multimedia.nix ];
-multimedia.enable = true;
-```
+## Hardware
 
-### Gaming (`gaming.nix`)
-Gaming compatibility layers and performance tools.
+`nvidia.nix` is the proprietary driver, kernel modesetting and the 32-bit
+libraries, used by `tower`. `pince.nix` is PINCE, scoped to the host that runs
+it. `laptop.nix` is the power and input stack: `power-profiles-daemon`,
+`thermald`, `upower`, `libinput`, Bluetooth, and the XDG portal. TLP is
+explicitly disabled there, and `work-laptop` enables it in its own config
+instead.
 
-**What's Included:**
-- **Platforms:** Steam (with Proton), Lutris, Heroic Games Launcher
-- **Performance:** MangoHUD, GameMode, vkBasalt
-- **Tools:** Protontricks, Protonup-Qt, Wine
-- **Optimization:** Kernel tweaks for gaming
-- **Hardware:** 32-bit GPU drivers, gamepad support
+## Agent sandbox
 
-**Enable:**
-```nix
-imports = [ ../modules/gaming.nix ];
-gaming.enable = true;
-gaming.kernelTuning = true;  # opt-in kernel, network and flatpak tuning
-```
+`agent-sandbox.nix` installs `agent-sandbox`, which runs a session in a transient
+`systemd-nspawn` container: the checkout at `/workspace`, a read-only store, a
+tmpfs home, and loopback-only networking whose only route out is an allowlisting
+`CONNECT` proxy. `MemoryMax`, `CPUQuota` and `TasksMax` bound the session scope.
 
-`gaming.kernelTuning` never disables CPU mitigations. Shared defaults stay
-secure, and the tuning only applies on the host that opts in.
-
-### Development (`development.nix`)
-Development tools and language runtimes.
-
-**What's Included:**
-- **Languages:** Python 3, Node.js 22, Go, Rust (rustup)
-- **Version Managers:** nvm equivalent via Nix
-- **Build Tools:** CMake, make, pkg-config, just
-- **Formatters:** black, ruff, prettier, stylua, shfmt
-- **Linters:** eslint, shellcheck, pylint
-- **Package Managers:** pnpm, bun, cargo
-- **Tools:** jq, yq, httpie, postman
-
-**Enable:**
-```nix
-imports = [ ../modules/development.nix ];
-```
-
-The module installs the toolchain directly, so the import is enough.
-
-### Containers (`containers.nix`)
-Container and Kubernetes tools.
-
-**What's Included:**
-- **Runtime:** Docker, docker-compose
-- **Tools:** distrobox (run any Linux distro)
-- **Kubernetes:** kubectl, k9s (TUI), helm
-- **Building:** buildah, skopeo
-- **Utilities:** docker-compose syntax support
-
-**Enable:**
-```nix
-imports = [ ../modules/containers.nix ];
-machines.containers.enable = true;
-```
-
-### Virtualization (`virtualization.nix`)
-Virtualization tools with GUI management.
-
-**What's Included:**
-- **Hypervisor:** QEMU/KVM with hardware acceleration
-- **Management:** virt-manager (GUI), virsh (CLI)
-- **Library:** libvirt with networking
-- **Tools:** virt-viewer, virt-install
-- **Features:** USB passthrough, shared folders, snapshots
-
-**Enable:**
-```nix
-imports = [ ../modules/virtualization.nix ];
-virtualization.enable = true;
-```
-
-### Sysadmin (`sysadmin.nix`)
-System administration tools.
-
-**What's Included:**
-- **Backups:** restic, rclone, borgbackup, duplicity
-- **Monitoring:** htop, btop, iotop, iftop, nethogs
-- **Network:** nmap, tcpdump, wireshark, netcat, iperf
-- **Disk:** gparted, smartmontools, ncdu
-- **Hardware:** lshw, usbutils, pciutils, dmidecode
-- **Performance:** sysstat, stress-ng
-- **Logs:** lnav (log navigator)
-
-**Enable:**
-```nix
-imports = [ ../modules/sysadmin.nix ];
-sysadmin.enable = true;
-```
-
-### Laptop (`laptop.nix`)
-Laptop-specific power and hardware management.
-
-**What's Included:**
-- **Power:** power-profiles-daemon and thermald (TLP is explicitly disabled)
-- **Battery:** upower reporting
-- **Input:** libinput touchpad handling
-- **Bluetooth:** BlueZ stack with Blueman
-- **Integration:** XDG desktop portal with the GTK backend
-
-**Enable:**
-```nix
-imports = [ ../modules/laptop.nix ];
-```
-
-The module applies its defaults on import, so the import is enough.
-
-### Agent Sandbox (`agent-sandbox.nix`)
-Run a coding agent against one checkout without giving it the machine.
-
-**What's Included:**
-- `agent-sandbox run <project>`: a transient `systemd-nspawn` session with the
-  project at `/workspace`, a read-only store, and a tmpfs home
-- An allowlisting `CONNECT` proxy: the session has no network interface except
-  loopback, so the proxy is its only route out
-- `MemoryMax`, `CPUQuota` and `TasksMax` on the session scope
-
-**Enable:**
 ```nix
 imports = [ ../../modules/agent-sandbox.nix ];
 machines.agentSandbox.enable = true;
 ```
 
-See [AGENT-SANDBOX.md](AGENT-SANDBOX.md) for the boundary and its limits.
+[AGENT-SANDBOX.md](AGENT-SANDBOX.md) states the boundary and what it does not
+cover.
 
-### Wallpapers
-NixOS wallpapers from `nixos-artwork` with automatic rotation support for desktop environments.
+## Wallpapers
 
-**Enable:**
-```nix
-imports = [ ../modules/wallpapers.nix ];
-machines.wallpapers.enable = true;
-machines.wallpapers.rotationInterval = 300;  # seconds
-```
-
-**Includes:**
-- 40+ official wallpapers (binary series, Catppuccin themes, nineish retro, 3D renders)
-- Automatic rotation configured per desktop environment
-- System-wide installation accessible to all users
-
-**Note:** Enabled by default in all desktop profiles. Home Manager automatically symlinks wallpapers to `~/.wallpapers`.
-
-See `modules/README.md` for complete module documentation.
-
-## Command-Line Tools
-
-All profiles include these command-line tools:
-
-- **fzf** - Fuzzy finder for command history and file search
-- **zoxide** - Directory navigation based on usage history
-- **eza** - `ls` alternative with colors and icons
-- **bat** - File viewer with syntax highlighting and Git integration
-- **ripgrep** - Recursive text search
-- **fd** - `find` alternative
-- **lazygit** - Terminal UI for Git
-- **delta** - Syntax-highlighting pager for Git diffs
-- **starship** - Minimal, fast shell prompt
-
-### Home Manager Integration
-Pre-configured Home Manager setup for managing user dotfiles and configurations.
-
-See `home/README.md` for Home Manager documentation.
-
-## Security Defaults
-
-- SSH enabled with key-based authentication only
-- Firewall enabled by default
-- Root login disabled
-- Password authentication disabled
-- Fail2ban available in security module
-- Agent sessions are opt-in per host (`machines.agentSandbox`) and reach the
-  network only through an allowlisting proxy, on port 443, for named hosts
-
-See `SECRETS.md` for secrets management options.
-
-## Automatic Cleanup
-
-Systemd timers automatically:
-- Keep last 3 system generations
-- Garbage collect store paths older than 14 days
-- Maintain a small rollback window while preventing disk bloat
-
-Override these defaults in your machine configuration if needed.
-
-## Generation Retention
-
-The default configuration keeps:
-- **3 system generations** for rollback capability
-- **14 days** of store paths before garbage collection
+`machines.wallpapers` installs the `nixos-artwork` set system-wide and rotates
+it on a timer. `rotationInterval` is in seconds. Enabled on every desktop role.

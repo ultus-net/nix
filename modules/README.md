@@ -1,270 +1,158 @@
-# NixOS Modules
+# Modules
 
-This directory contains modular NixOS configuration fragments. Each module is opt-in and provides specific functionality.
+Host-agnostic configuration fragments. A module declares an option, guards its
+config behind that option, and never names a path under `hosts/`. That last rule
+is what `scripts/check-layering.py` enforces.
 
-## Core Modules
+## Inventory
 
-### System Configuration
-- **`networking.nix`** - Network management (NetworkManager)
-- **`security.nix`** - Security hardening and SSH configuration
-- **`audio.nix`** - PipeWire audio stack
-- **`fonts.nix`** - Font packages (Nerd Fonts, emoji)
-- **`zram.nix`** - ZRAM compressed swap
-- **`nvidia.nix`** - NVIDIA proprietary driver configuration
-- **`wallpapers.nix`** - NixOS official wallpaper collection with automatic rotation
-- **`auto-upgrade.nix`** - Weekly rebuild from a reviewed `origin/main` commit
-- **`agent-sandbox.nix`** - Transient `systemd-nspawn` session with an
-  allowlisting CONNECT proxy, opt-in per host via `machines.agentSandbox`
+| Module | Option prefix | On import |
+| --- | --- | --- |
+| `base.nix` | none | sets `stateVersion`, flakes, `nix.gc`, locale; imports `zram.nix` |
+| `networking.nix` | none | NetworkManager |
+| `security.nix` | none | firewall, sshd, key-only auth, no root login |
+| `audio.nix` | none | PipeWire |
+| `fonts.nix` | none | fontconfig, JetBrains Mono and FiraCode Nerd Fonts, `noto-fonts-color-emoji` |
+| `home-manager.nix` | none | the HM NixOS module |
+| `development.nix` | none | language toolchains and linters |
+| `nvidia.nix` | none | proprietary driver, KMS, 32-bit libs |
+| `laptop.nix` | none | `power-profiles-daemon`, `thermald`, `upower`, libinput, Bluetooth |
+| `common-packages.nix` | `commonPackages` | nothing until enabled |
+| `multimedia.nix` | `multimedia` | nothing until enabled |
+| `gaming.nix` | `gaming` | nothing until enabled |
+| `containers.nix` | `machines.containers` | nothing until enabled |
+| `virtualization.nix` | `virtualization` | nothing until enabled |
+| `sysadmin.nix` | `sysadmin` | nothing until enabled |
+| `pince.nix` | `pince` | nothing until enabled |
+| `deploy-config.nix` | `deployConfig` | nothing until enabled |
+| `wallpapers.nix` | `machines.wallpapers` | nothing until enabled |
+| `zram.nix` | `machines.zram` | defaults via `base.nix` |
+| `auto-upgrade.nix` | `machines.autoUpgrade` | nothing until enabled |
+| `agent-sandbox.nix` | `machines.agentSandbox` | nothing until enabled |
+| `kde.nix` | `kde` | nothing until enabled; composed by `roles/kde.nix` |
+| `xfce.nix` | `xfce` | nothing until enabled; composed by `roles/xfce.nix` |
+| `hyprland.nix` | `hyprland` | nothing until enabled; composed by `roles/hyprland.nix` |
 
-### Package Collections
-- **`common-packages.nix`** - Essential CLI tools and modern replacements (htop, btop, ripgrep, fzf, eza, bat, git, etc.)
-- **`development.nix`** - Development tools and language runtimes
+## Options worth knowing
 
-### Optional Feature Modules
-- **`gaming.nix`** - Gaming tools plus opt-in kernel/network tuning (`gaming.kernelTuning`)
-- **`virtualization.nix`** - VM support (libvirt, QEMU, virt-manager)
-- **`laptop.nix`** - Laptop-specific settings (power management, TLP)
-- **`multimedia.nix`** - Media tools (VLC, GIMP, ffmpeg, OBS)
-- **`containers.nix`** - Container tools (Docker, distrobox, Kubernetes)
-- **`sysadmin.nix`** - System administration tools (backups, network diagnostics, hardware monitoring)
-
-### Desktop Environments
-- **`hyprland.nix`** - Hyprland Wayland compositor
-- **`kde.nix`** - KDE Plasma 6
-- **`xfce.nix`** - XFCE
-
-### User Configuration
-- **`home-manager.nix`** - Home Manager integration
-
-## Usage
-
-### In a Profile
-
-```nix
-{ config, pkgs, lib, ... }:
-{
-  imports = [
-    ../modules/common-packages.nix
-    ../modules/development.nix
-    ../modules/multimedia.nix  # Optional
-    ../modules/gaming.nix      # Optional
-  ];
-
-  # Enable modules
-  commonPackages.enable = true;
-  gaming.enable = true;
-  multimedia.enable = true;
-}
-```
-
-### In a Machine Configuration
-
-```nix
-{ config, pkgs, lib, ... }:
-{
-  imports = [
-    ../modules/laptop.nix
-    ../modules/sysadmin.nix
-    ../modules/containers.nix
-  ];
-
-  # Configure laptop features
-  laptop = {
-    enable = true;
-    enableBluetooth = true;
-    enableTLP = true;
-  };
-
-  # Enable sysadmin tools
-  sysadmin = {
-    enable = true;
-    enableBackupTools = true;
-    enableNetworkDiagnostics = true;
-  };
-
-  # Enable containers
-  containers = {
-    enable = true;
-    enableDistrobox = true;
-    enableDockerCompose = false;
-  };
-}
-```
-
-## Module Options
-
-### multimedia.nix
+### `multimedia`
 
 ```nix
 multimedia = {
   enable = true;
-  enableVideoEditing = true;    # Kdenlive, Blender
-  enableAudioProduction = true; # Audacity, Ardour
-  extraPackages = [ pkgs.handbrake ];
+  enableVideoEditing = true;     # Kdenlive, Blender
+  enableAudioProduction = true;  # Audacity, Ardour
+  extraPackages = [ ];
 };
 ```
 
-**Includes:**
-- Media players: VLC, MPV
-- Image tools: GIMP, ImageMagick, feh, imv
-- Video tools: ffmpeg, yt-dlp
-- Screenshot: grim, slurp, flameshot, peek
-- Recording: OBS Studio
+Players, image tools, `ffmpeg`, `yt-dlp`, screenshot and recording tools, and
+OBS.
 
-### containers.nix
+### `gaming`
 
 ```nix
-containers = {
-  enable = true;
-  enableDistrobox = true;       # Run other distros in containers
-  enableKubernetes = true;      # kubectl, k9s, helm
-  enableDockerCompose = true;   # Install docker-compose
-  extraPackages = [ pkgs.docker-compose ];
+gaming = {
+  enable = true;            # Steam, Lutris, Heroic, MangoHUD, GameMode
+  enableSteam = true;       # the NixOS programs.steam module
+  kernelTuning = true;      # governor, kernel params, sysctl; this host only
+  enableI386Compat = true;  # 32-bit libraries
+  enableProtonEnv = true;   # Proton environment variables
+  optimizeSteamIO = true;   # Steam I/O and cloud-sync tuning
 };
 ```
 
-**Includes:**
-- Docker with compose support
-- Distrobox + BoxBuddy GUI
-- Optional: Kubernetes tools
+`kernelTuning` is the one that must not be in shared defaults. It never disables
+CPU mitigations, and `PERFORMANCE.md` lists exactly what it sets.
 
-### sysadmin.nix
+Every one of these sits inside `lib.mkIf cfg.enable`, so `gaming.enable = true`
+is required as well. `kernelTuning = true` on its own changes nothing.
+
+### `machines.containers`
+
+```nix
+machines.containers = {
+  enable = true;
+  enableDistrobox = true;
+  enableKubernetes = false;   # kubectl, k9s, helm
+  enableDockerCompose = true;
+  extraPackages = [ ];
+};
+```
+
+### `sysadmin`
 
 ```nix
 sysadmin = {
   enable = true;
   enableBackupTools = true;         # restic, rclone, borgbackup
-  enableNetworkDiagnostics = true;  # bandwhich, gping, wireshark
+  enableNetworkDiagnostics = true;  # nmap, wireshark, iperf3
   enableHardwareMonitoring = true;  # smartmontools, lm_sensors
-  extraPackages = [ pkgs.ansible ];
+  extraPackages = [ ];
 };
 ```
 
-**Includes:**
-- Backup: restic, rclone, syncthing, borgbackup
-- Network: bandwhich, gping, nmap, wireshark, iperf3
-- Hardware: smartmontools, lm_sensors, nvme-cli
-- Filesystems: NTFS, exFAT, ext4 tools
-- Modern tools: procs, duf, dust
-
-### gaming.nix
+### `machines.wallpapers`
 
 ```nix
-gaming = {
+machines.wallpapers = {
   enable = true;
-  enableI386Compat = true;
-  enableProtonEnv = true;
-  protonEnv = {
-    PROTON_ENABLE_NVAPI = "1";
-    DXVK_ASYNC = "1";
-  };
+  rotationInterval = 300;   # seconds
 };
 ```
 
-**Includes:**
-- Steam, Lutris, Heroic
-- MangoHUD, GameMode
-- Proton tools
-- Vulkan support
+Installs the `nixos-artwork` set system-wide and rotates it. Every desktop role
+sets `enable = lib.mkDefault true`.
 
-### laptop.nix
-
-```nix
-laptop = {
-  enable = true;
-  enableBluetooth = true;
-  enableTLP = true;
-  enableBacklight = true;
-};
-```
-
-**Features:**
-- Power management (TLP)
-- Bluetooth support
-- Backlight control
-- Battery optimization
-
----
-
-## wallpapers.nix
-
-Installs the complete collection of official NixOS wallpapers from `nixos-artwork` and makes them available system-wide for automatic rotation by desktop environments.
-
-**Enable:**
-```nix
-machines.wallpapers.enable = true;
-machines.wallpapers.rotationInterval = 300;  # seconds (5 minutes)
-```
-
-**Features:**
-- 40+ official NixOS wallpapers including:
-  - Binary series (black, blue, red, white)
-  - Catppuccin color schemes (frappe, latte, macchiato, mocha)
-  - Nineish retro series with Catppuccin variants
-  - Classic NixOS wallpapers (simple-blue, mosaic-blue, stripes)
-  - 3D renders (gear, moonscape, recursive, waterfall)
-- System-wide installation accessible to all desktop environments
-- Home Manager integration for automatic wallpaper symlinks
-- Rotation configured via desktop environments
-
-**Note:** This module is enabled by default in all desktop profiles. The Home Manager configuration ([home/hunter.nix](../home/hunter.nix)) automatically symlinks all wallpapers to `~/.wallpapers` for rotation.
-
----
-
-## Creating New Modules
-
-See `CONTRIBUTING.md` for guidelines on creating new modules.
-
-### Module Template
-
-```nix
-{ config, pkgs, lib, ... }:
-let
-  cfg = config.myModule;
-in {
-  options.myModule = {
-    enable = lib.mkEnableOption "Enable my module";
-    
-    extraPackages = lib.mkOption {
-      type = lib.types.listOf lib.types.package;
-      default = [];
-      description = "Additional packages";
-    };
-  };
-
-  config = lib.mkIf cfg.enable {
-    environment.systemPackages = with pkgs; [
-      # your packages here
-    ] ++ cfg.extraPackages;
-  };
-}
-```
-
-### auto-upgrade.nix
+### `machines.autoUpgrade`
 
 ```nix
 machines.autoUpgrade = {
   enable = true;
   flakePath = "/home/hunter/Documents/nix";
-  ref = "main";             # remote branch to follow
-  dates = "weekly";         # systemd calendar expression
+  ref = "main";
+  dates = "weekly";
 };
 ```
 
-**Features:**
-- `system.autoUpgrade` is the only updater: no second service, no aliases
-- A `preStart` hook runs `git fetch` and `merge --ff-only` for `ref`, so a host
-  only ever moves to a commit that passed CI on `main`
-- `--no-update-lock-file` keeps the lock file under review; bumping inputs is a
-  manual, reviewable commit
-- `nix.gc` stays configured in `modules/base.nix`
+`system.autoUpgrade` is the only updater. A `preStart` hook runs `git fetch`
+then `merge --ff-only` for `ref`, so a host only moves to a commit that passed
+CI on `main`. `--no-update-lock-file` keeps the lock under review: bumping an
+input is a commit, not a timer.
 
-## Best Practices
+`safe.directory` names `flakePath`, not `*`, so the git trust the unit grants is
+the one checkout it reads.
 
-1. **Use `lib.mkEnableOption`** for opt-in modules
-2. **Provide `extraPackages`** option for extensibility
-3. **Use `lib.mkDefault`** for easily overridable values
-4. **Document options** with clear descriptions
-5. **Keep modules focused** - one concern per module
-6. **Use `lib.mkIf`** to conditionally enable features
-7. **Add comments** explaining non-obvious configurations
+### `machines.agentSandbox`
+
+```nix
+machines.agentSandbox = {
+  enable = true;
+  allowedHosts = [ "github.com" "*.github.com" ];
+  allowedPorts = [ 443 ];
+  tools = [ pkgs.bashInteractive pkgs.git pkgs.curl ];
+  homeSize = "1G";
+  memoryMax = "8G";
+  cpuQuota = "400%";
+  tasksMax = 4096;
+};
+```
+
+[AGENT-SANDBOX.md](../documentation/AGENT-SANDBOX.md) states the boundary.
+
+### `machines.zram`
+
+```nix
+machines.zram = {
+  enableAutoSize = true;    # min(total_ram / 2, maxSize)
+  maxSize = 4294967296;     # 4 GiB
+  size = 0;                 # explicit size, when auto-sizing is off
+  compAlgorithm = "lz4";
+};
+```
+
+## Naming
+
+A new module takes a namespace named for its concern, not for the host that
+wanted it. If two modules would need the same prefix, they are one module. Add
+the option to the table above in the same change, or the table drifts.

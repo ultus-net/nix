@@ -6,7 +6,7 @@ flake's pinned nixpkgs. Published to
 
 It is a **toolchain image, not a security boundary**. It has full network
 access, and it runs as an ordinary container. Confining an agent is the job of
-the sandbox described in `documentation/design/2026-11-18-overhaul-design.md`.
+`machines.agentSandbox`; see `documentation/AGENT-SANDBOX.md`.
 
 ## Contents
 
@@ -39,8 +39,8 @@ podman run --rm -it -v "$PWD:/workspace" ghcr.io/ultus-net/nix-dev:latest
 ```
 
 Use rootless podman: the container runs as uid 1000, which rootless podman maps
-to your own user, so files written to `/workspace` stay yours. With rootful
-docker they would be owned by uid 1000 on the host.
+to the invoking user, so files written to `/workspace` stay owned by that user.
+With rootful docker they arrive as uid 1000 on the host.
 
 An agent CLI stores its credentials in `$HOME`, which is the container's own
 home. Nothing persists between `--rm` runs, so log in again per session.
@@ -48,8 +48,8 @@ home. Nothing persists between `--rm` runs, so log in again per session.
 ## Updates
 
 CI rebuilds and pushes on every push to `main` that touches `containers/`,
-`flake.nix`, or `flake.lock`. Pull requests build the image and run a smoke test
-without pushing. The smoke test asserts the loaded reference, the shell, the CA
-bundle, and one binary per toolchain, so a package rename fails CI instead of
-publishing a broken image. The package also shows up in `nix flake show`, so
+`flake.nix`, or `flake.lock`. A pull-request build runs the smoke test without
+pushing. The smoke test asserts the loaded reference, the shell, the CA bundle,
+and one binary per toolchain, so a package rename fails CI instead of publishing
+a broken image. The package also shows up in `nix flake show`, so
 `nix build .#dev-image` always matches the pinned inputs.

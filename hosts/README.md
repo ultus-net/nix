@@ -1,86 +1,62 @@
 # Hosts
 
-## Purpose
-This directory holds one directory per machine, each with a `default.nix`
-entry point. A host composes the shared defaults (`modules/base.nix`) with a
-`roles/<name>.nix` entry and, when installing, an installer-generated
-hardware file.
+One directory per machine. A host is the leaf of the tree: identity, hardware,
+and the role it picks.
 
-Shared modules are located under `modules/`. Host files can import them with
-paths such as `../../modules/security.nix`.
+| Host | Role | Notes |
+| --- | --- | --- |
+| `tower/` | `kde.nix` | NVIDIA, gaming, multimedia, Docker, libvirt, PINCE, agent sandbox |
+| `work-laptop/` | `kde.nix` | TLP, fwupd, DisplayLink, agent sandbox |
+| `example/` | `kde.nix` | skeleton, copied when a machine joins; not built by CI |
 
-## Quick Template
+`base-server` has no directory. It is `mkSystem ./roles/base.nix` in
+`flake.nix`, which keeps the headless role under `flake check` without
+inventing a machine.
 
-Example `hosts/my-pc/default.nix`:
+## A host directory
 
-```nix
-{ config, pkgs, lib, ... }:
-{
-  # Shared defaults, the chosen role, and the shared users module.
-  imports = [
-    ../../modules/base.nix
-    ../../roles/kde.nix
-    ./hardware.nix  # generated during install
-  ];
-  networking.hostName = "my-pc";
-}
+```
+hosts/tower/
+├── default.nix    # imports, hostname, users, host-only options
+└── hardware.nix   # filesystems, bootloader, kernel modules
 ```
 
-## ZRAM Tuning
-The zram module is provided at `modules/zram.nix` and exposes `machines.zram.*`
-options. By default zram size is computed as min(total RAM / 2,
-`machines.zram.maxSize`). You can override explicitly with `machines.zram.size`
-or disable the heuristic with `machines.zram.enableAutoSize = false`.
+`hardware.nix` is what `nixos-generate-config` writes. Nothing else in the tree
+sets `fileSystems` except a role's `lib.mkDefault` placeholder, so a stale
+`hardware.nix` is the usual cause of a failed install.
 
-## GC and Generation Retention
-The machine master config (`modules/base.nix`) includes a weekly
-systemd timer that:
+## What belongs here
 
-- keeps the last **3** system generations
-- runs `nix-collect-garbage --delete-older-than 14d` to remove older store paths
+- `imports`: `./hardware.nix`, the chosen role, and any module this host alone
+  needs. `base.nix` arrives through the role; importing it twice is harmless and
+  usually redundant.
+- `networking.hostName`, and anything else that is true of this machine only.
+- The user account. There is no shared users module; a host owns its accounts.
+- Host-only options: `machines.autoUpgrade`, `machines.agentSandbox`,
+  `machines.wallpapers`, `gaming.kernelTuning`, DisplayLink, PINCE.
 
-This is the default retention policy for machines; you can override it per
-machine by replacing or disabling the unit.
+## What does not
 
-## OpenSSH Hardening
-OpenSSH is enabled by default with the following settings:
+A change that more than one host would want belongs in `roles/` or `modules/`,
+not here. If a host needs a new module, the module takes an option and the host
+sets it.
 
-- password authentication disabled
-- keyboard-interactive authentication disabled
-- root login disabled
+## Overrides
 
-Override these per-machine if you need a different behavior.
+A host wins over a role because a role uses `lib.mkDefault` for anything a
+machine might differ on. Retention and zram sizing live in `modules/base.nix`
+and `modules/zram.nix`; `FEATURES.md` carries the option lists, so this file
+does not restate them.
 
-## Override Examples
+## Adding a machine
 
-Temporarily allow SSH password login for an install session (not recommended
-long-term):
+1. `cp -r hosts/example hosts/<name>`.
+2. Install on the target, then copy the generated
+   `hardware-configuration.nix` over `hosts/<name>/hardware.nix`.
+3. Set the role import, the hostname and the account.
+4. Add one line to `nixosConfigurations` in `flake.nix`:
+   `mkSystem ./hosts/<name>/default.nix`.
+5. Add a `nixosTest` in `tests/hosts.nix`, or the host is not gated.
 
-```nix
-services.openssh.settings.PasswordAuthentication = true;
-services.openssh.settings.KbdInteractiveAuthentication = true;
-```
-
-Change retention policy (example: keep 5 generations and keep store paths for
-30 days):
-
-```nix
-systemd.services.nixos-gc-keep-generations.serviceConfig.ExecStart = lib.mkForce ''
-  /bin/sh -e -c '\
-    PROFILE=/nix/var/nix/profiles/system; \
-    KEEP=5; \
-    GENS=$(nix-env --list-generations --profile "$PROFILE" | awk '\''/^[[:space:]]*[0-9]+/{gsub("\\*","",$1); print $1}'\'' | sort -n || true); \
-    if [ -n "$GENS" ]; then \
-      MAX=$(echo "$GENS" | tail -n1); \
-      if [ "$MAX" -gt "$KEEP" ]; then \
-        THRESH=$((MAX - KEEP)); \
-        nix-env --profile "$PROFILE" --delete-generations "1-$THRESH" || true; \
-      fi; \
-    fi; \
-    nix-collect-garbage --delete-older-than 30d || true'
-'';
-```
-
-## Users
-Users are declared with the standard NixOS `users.users` attribute set in the
-host file. There is no shared users module; each host owns its accounts.
+That last step is the one that gets skipped. A host with no test is a host whose
+next module change can break it silently.
