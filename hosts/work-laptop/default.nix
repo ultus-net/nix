@@ -1,11 +1,11 @@
 { config, pkgs, lib, ... }:
 {
-  # Work Laptop - Portable workstation with COSMIC desktop and DisplayLink support
+  # Work Laptop - Portable workstation with KDE and DisplayLink support
   # Hardware configuration generated from nixos-generate-config
 
   imports = [
     ../../modules/base.nix
-    ../../roles/cosmic.nix
+    ../../roles/kde.nix
     ../../modules/common-users.nix
     ./hardware.nix
   ];
@@ -38,21 +38,12 @@
   };
 
   # ============================================================================
-  # COSMIC Desktop Configuration
-  # ============================================================================
-  
-  cosmic.enableClipboardManager = true;
-  cosmic.enableWaylandApps = true;
-  cosmic.enableMediaControls = true;
-
-  # ============================================================================
   # DisplayLink & Docking Station Support
   # ============================================================================
   
   # DisplayLink drivers for docking stations
-  # Note: DisplayLink traditionally uses X11. For Wayland/COSMIC support, the evdi
-  # kernel module is loaded, and XWayland provides compatibility for DisplayLink
-  # displays. Future Wayland-native DisplayLink support may improve this.
+  # Note: DisplayLink traditionally uses X11. For Wayland, the evdi kernel module
+  # is loaded, and XWayland provides compatibility for DisplayLink displays.
   # Temporarily disabled DisplayLink - requires manual driver download from Synaptics
   # Enable DisplayLink support via the upstream NixOS hardware.video.displaylink module
   # (triggered when "displaylink" is present in services.xserver.videoDrivers).
@@ -100,7 +91,7 @@
   # ============================================================================
   
   # Configure logind for proper suspend/resume handling
-  # Helps COSMIC greeter restore displays properly after sleep
+  # Helps the greeter restore displays properly after sleep
   services.logind = {
     lidSwitch = "suspend";
     lidSwitchDocked = "ignore";

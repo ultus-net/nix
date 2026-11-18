@@ -303,8 +303,6 @@
   # For FAT /boot partition, only add noatime (preserve fmask/dmask from hardware.nix)
   fileSystems."/boot".options = lib.mkAfter [ "noatime" ];
 
-  # COSMIC desktop personalization
-
   # Swap file as fallback (zram handles primary swap needs)
   # With 30GB RAM + 15GB zram, disk swap rarely needed
   # For hibernation: swap size should equal RAM (30GB). Without hibernation,
@@ -329,10 +327,8 @@
   };
 
   # Bluetooth support
-  # COSMIC desktop includes built-in Bluetooth settings, so blueman is not needed
   hardware.bluetooth.enable = true;
   hardware.bluetooth.powerOnBoot = true;
-  # services.blueman.enable = true; # Uncomment if you prefer blueman over COSMIC's Bluetooth UI
 
   # Better desktop responsiveness
   services.system76-scheduler.enable = true;

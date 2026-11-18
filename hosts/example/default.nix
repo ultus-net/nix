@@ -12,10 +12,10 @@
   # - You want machine-specific settings (different users, custom modules, etc.)
   #
   # WHEN NOT TO USE THIS:
-  # - First time installation: Use pre-built profiles directly like:
-  #   nixos-install --flake /mnt/nixos-base#gnome-workstation
-  # - Just testing desktops: Switch profiles with:
-  #   sudo nixos-rebuild switch --flake .#kde-workstation
+  # - First time installation: install a host directly, for example:
+  #   nixos-install --flake /mnt/nixos-base#tower
+  # - Just testing desktops: switch the role a host imports, then rebuild:
+  #   sudo nixos-rebuild switch --flake .#tower
   #
   # HOW TO USE THIS TEMPLATE:
   # 1. Copy this file: cp hosts/example/default.nix hosts/my-machine/default.nix
@@ -30,7 +30,7 @@
 
   imports = [
     ../../modules/base.nix
-    ../../roles/cosmic.nix
+    ../../roles/kde.nix
     ../../modules/common-users.nix
   ];
 

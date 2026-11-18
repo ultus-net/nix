@@ -1,5 +1,5 @@
 {
-  description = "Modular NixOS flake with 6 desktop environments, Home Manager, and developer tools";
+  description = "NixOS hosts composed from roles: KDE, Hyprland and XFCE";
 
   inputs = {
     # Pin nixpkgs to nixpkgs-unstable for the latest packages and fixes
@@ -58,7 +58,7 @@
       in {
         # A developer shell with common tools similar to Universal Blue QoL
         devShells.default = pkgs.devshell.mkShell {
-          name = "cosmic-workstation";
+          name = "nixos-base";
           packages = with pkgs; [
             # shells & core
             bashInteractive
@@ -127,211 +127,10 @@
           ];
         };
 
-        packages.default = pkgs.writeShellApplication {
-          name = "cosmic-qol";
-          runtimeInputs = with pkgs; [ eza ripgrep fd starship neovim ];
-          text = ''
-            echo "COSMIC QoL helpers installed via Nix"
-          '';
-        };
-
         # Dev toolchains (Node, Python, Go) plus agent CLIs in one image. Built
         # from this flake's nixpkgs, so there is no second dependency source.
         # It is a toolchain image, not a security boundary.
         packages.dev-image = import ./containers/dev { inherit pkgs; };
-
-        # OCI / Docker image containing a lightweight dev environment
-        # Use `copyToRoot` with `buildEnv` instead of the deprecated `contents`.
-        packages.cosmicImage = pkgs.dockerTools.buildImage {
-          name = "cosmic-workstation";
-          copyToRoot = pkgs.buildEnv {
-            name = "cosmic-workstation-root";
-              paths = with pkgs; [
-              bashInteractive
-              git
-              gh
-              direnv
-              nix-direnv
-              jq
-              yq
-              ripgrep
-              fd
-              sd
-              eza
-              delta
-              starship
-              neovim
-              python3
-              nodejs_22
-              pnpm
-              go
-              rustup
-              docker
-              docker-compose
-              cmake
-              pkg-config
-              just
-            ];
-          };
-          config = {
-            Cmd = [ "/bin/bash" ];
-          };
-        };
-
-        # KDE-specific OCI image (lightweight developer container with KDE tools)
-        packages.kdeImage = pkgs.dockerTools.buildImage {
-          name = "kde-dev";
-          copyToRoot = pkgs.buildEnv {
-            name = "kde-dev-root";
-            paths = with pkgs; [
-              bashInteractive
-              git
-              gh
-              direnv
-              jq
-              ripgrep
-              eza
-              neovim
-              python3
-              nodejs_22
-              pnpm
-              go
-              rustup
-              cmake
-              pkg-config
-              just
-              # KDE specific tooling (lightweight)
-              # (keep this list minimal and avoid referencing attributes that may
-              # not exist in all nixpkgs snapshots)
-            ];
-          };
-          config = { Cmd = [ "/bin/bash" ]; };
-        };
-
-        # Home Manager module for common QoL on COSMIC
-        homeManagerModules.default = { config, pkgs, lib, ... }:
-          let cfg = config.cosmicDev;
-          in {
-            options.cosmicDev.enable = lib.mkEnableOption "Enable developer QoL config for COSMIC";
-            config = lib.mkIf cfg.enable {
-              programs.home-manager.enable = true;
-
-              # Shell basics
-              programs.zsh.enable = false;
-              programs.bash = {
-                enable = true;
-                enableCompletion = true;
-                bashrcExtra = ''
-                  eval "$(starship init bash)"
-                '';
-              };
-
-              programs.starship = {
-                enable = true;
-                settings = {
-                  add_newline = false;
-                  command_timeout = 1200;
-                };
-              };
-
-              # Direnv
-              programs.direnv = {
-                enable = true;
-                nix-direnv.enable = true;
-              };
-
-              # Git
-              programs.git = {
-                enable = true;
-                userName = "${config.home.username}";
-                userEmail = "${config.home.username}@local";
-                extraConfig = {
-                  init.defaultBranch = "main";
-                  pull.rebase = true;
-                };
-              };
-
-              # Delta (git pager) as a separate program module
-              programs.delta = {
-                enable = true;
-              };
-
-              # Neovim basic setup
-              programs.neovim = {
-                enable = true;
-                defaultEditor = true;
-                viAlias = true;
-                vimAlias = true;
-                plugins = with pkgs.vimPlugins; [
-                  vim-nix
-                  nvim-lspconfig
-                  nvim-treesitter
-                  telescope-nvim
-                ];
-                extraConfig = ''
-                  set number
-                  set relativenumber
-                  set ignorecase smartcase
-                '';
-              };
-
-              # Common packages
-              home.packages = with pkgs; [
-                # fonts & emoji
-                (nerdfonts.override { fonts = [ "JetBrainsMono" "FiraCode" ]; })
-                noto-fonts-emoji
-
-                # tools
-                eza ripgrep fd jq yq delta sd
-                just
-                gnupg
-                gh
-                bat
-                hyperfine
-
-                # language servers
-                nodePackages_latest.typescript-language-server
-                nodePackages_latest.vscode-langservers-extracted
-                marksman
-
-                # cosmic-friendly apps (installed via nix when possible)
-                # Note: COSMIC is Wayland-first; these are Wayland-friendly.
-              ];
-
-              fonts.fontconfig.enable = true;
-
-              # VSCode via Home Manager (unfree)
-              programs.vscode = {
-                enable = true;
-                enableExtensionUpdateCheck = false;
-                package = pkgs.vscode;
-                extensions = with pkgs.vscode-extensions; [
-                  ms-vscode.cpptools
-                  ms-python.python
-                  ms-python.vscode-pylance
-                  rust-lang.rust-analyzer
-                  esbenp.prettier-vscode
-                  dbaeumer.vscode-eslint
-                  github.vscode-pull-request-github
-                ];
-                userSettings = {
-                  "editor.fontFamily" = "JetBrainsMono Nerd Font";
-                  "editor.fontLigatures" = true;
-                  "terminal.integrated.fontFamily" = "JetBrainsMono Nerd Font";
-                  "files.trimTrailingWhitespace" = true;
-                  "editor.formatOnSave" = true;
-                };
-              };
-
-              # COSMIC/Wayland quality-of-life
-              xdg.mime.enable = true;
-              xdg.enable = true;
-              xdg.userDirs.enable = true;
-            };
-          };
-
-        # A sample Home Manager configuration exposing the module
-        # Users can link this file or copy content.
       })
     ) // {
       # NixOS system configurations
@@ -345,23 +144,14 @@
         in {
           # Headless/Server base configuration (no desktop environment)
           base-server = mkSystem ./roles/base.nix;
-          
+
           # Real machine configurations
           tower = mkSystem ./hosts/tower/default.nix;
           work-laptop = mkSystem ./hosts/work-laptop/default.nix;
-          
-          # Real COSMIC desktop (System76) - Wayland, Rust-based
-          cosmic-workstation = mkSystem ./roles/cosmic.nix;
-          
-          # GNOME - Modern GNOME Shell desktop
-          gnome-workstation = mkSystem ./roles/gnome.nix;
-          
+
           # KDE Plasma 6 - Feature-rich Qt desktop
           kde-workstation = mkSystem ./roles/kde.nix;
-          
-          # Cinnamon - Linux Mint's flagship desktop
-          cinnamon-workstation = mkSystem ./roles/cinnamon.nix;
-          
+
           # XFCE - Lightweight, traditional desktop
           xfce-workstation = mkSystem ./roles/xfce.nix;
 
@@ -373,7 +163,7 @@
       templates = {
         homeManager = {
           path = ./templates/home;
-          description = "Example Home Manager config enabling COSMIC developer QoL";
+          description = "Example Home Manager config for the home/ profiles";
         };
       };
 
