@@ -98,16 +98,12 @@
   
   # Configure logind for proper suspend/resume handling
   # Helps the greeter restore displays properly after sleep
-  services.logind = {
-    lidSwitch = "suspend";
-    lidSwitchDocked = "ignore";
-    lidSwitchExternalPower = "suspend";
-    settings = {
-      Login = {
-        HandlePowerKey = "suspend";
-        IdleAction = "ignore";
-      };
-    };
+  services.logind.settings.Login = {
+    HandleLidSwitch = "suspend";
+    HandleLidSwitchDocked = "ignore";
+    HandleLidSwitchExternalPower = "suspend";
+    HandlePowerKey = "suspend";
+    IdleAction = "ignore";
   };
 
   # SSD TRIM support

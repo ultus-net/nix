@@ -39,18 +39,21 @@ Desktop-specific configuration lives in `roles/` and their imported modules.
 ## Flake Structure
 
 ### Inputs
-- **nixpkgs** - Pinned to a specific commit for reproducibility
-- **nixpkgs-stable** - Stable channel backup
-- **home-manager** - User environment management
-- **flake-utils** - Flake utilities
-- **devshell** - Development shell configuration
+- **nixpkgs** - `nixpkgs-unstable`, pinned by `flake.lock`. One package set; no
+  stable overlay
+- **home-manager** - Follows the same nixpkgs input
+
+`lib/forAllSystems.nix` replaces `flake-utils`: it nests each per-system output
+under its system name. `devShells.default` uses `pkgs.mkShell`, so `devshell`
+is not an input either.
 
 ### Outputs
 
 #### Per-System Outputs
-Available on all supported systems (x86_64-linux):
+x86_64-linux only:
 
-- **devShells.default** - Development environment with tools
+- **devShells.default** - Development shell (`pkgs.mkShell`): toolchains,
+  linters and CLI tools
 - **packages.dev-image** - OCI toolchain image for dev containers
 
 #### Top-Level Outputs
@@ -70,9 +73,9 @@ Available on all supported systems (x86_64-linux):
    - Optional functionality (gaming, development, multimedia)
    - Enabled via `<module>.enable = true;`
 
-3. **Core Modules** (`modules/common-*.nix`)
-   - Essential functionality (packages, users, security)
-   - Usually imported by roles
+3. **Core Modules** (`modules/base.nix`, `modules/security.nix`,
+   `modules/networking.nix`)
+   - Essential functionality shared by roles
 
 ### Module Design Pattern
 
@@ -95,7 +98,7 @@ Modules follow this pattern:
 ### Namespace Conventions
 
 - `commonPackages.*` - Common package configuration
-- `machines.*` - Machine-level configuration (users, zram)
+- `machines.*` - Machine-level configuration (zram, containers, auto-upgrade)
 - `multimedia.*` - Multimedia feature configuration
 - `gaming.*` - Gaming feature configuration
 - `development.*` - Development tools configuration

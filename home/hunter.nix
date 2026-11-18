@@ -185,8 +185,8 @@
     enableBashIntegration = true;
 
     defaultCommand = "fd --type f --hidden --follow --exclude .git";
-    fileWidgetCommand = "fd --type f --hidden --follow --exclude .git";
-    changeDirWidgetCommand = "fd --type d --hidden --follow --exclude .git";
+    fileWidget.command = "fd --type f --hidden --follow --exclude .git";
+    changeDirWidget.command = "fd --type d --hidden --follow --exclude .git";
   };
 
   # zoxide (smarter cd)
@@ -217,8 +217,8 @@
     # GUI applications
     firefox        # Firefox (Wayland by default)
     vscode         # VS Code editor (manages own extensions/settings)
-    nodePackages_latest.typescript-language-server
-    nodePackages_latest.vscode-langservers-extracted
+    typescript-language-server
+    vscode-langservers-extracted
     marksman       # Markdown LSP
     nil            # Nix LSP
 

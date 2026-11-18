@@ -66,11 +66,11 @@
   boot.tmp.tmpfsSize = "50%"; # Use up to 50% of RAM for /tmp
   
   # Systemd journal size limits (prevent excessive disk usage)
-  services.journald.extraConfig = ''
-    SystemMaxUse=500M
-    SystemMaxFileSize=50M
-    MaxRetentionSec=1week
-  '';
+  services.journald.settings.Journal = {
+    SystemMaxUse = "500M";
+    SystemMaxFileSize = "50M";
+    MaxRetentionSec = "1week";
+  };
 
   # PINCE is a game-memory debugger; it needs ptrace, so it is host-scoped.
   pince.enable = true;
