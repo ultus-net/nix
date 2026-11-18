@@ -122,7 +122,7 @@ See `scripts/README.md` for complete script documentation.
    {
      imports = [
        ../../modules/base.nix        # Shared defaults
-       ./hardware-configuration.nix  # Your hardware config
+       ./hardware.nix                # Your hardware config
        ../../roles/gnome.nix         # Choose your desktop
      ];
 

@@ -61,7 +61,7 @@ cd /mnt/etc
 sudo git clone https://github.com/ultus-net/nixos-base.git nixos
 
 # Copy the hardware config that Calamares generated
-sudo cp /mnt/etc/nixos.backup/hardware-configuration.nix /mnt/etc/nixos/hosts/
+sudo cp /mnt/etc/nixos.backup/hardware-configuration.nix /mnt/etc/nixos/hosts/tower/hardware.nix
 
 # Edit tower.nix to match your username from Calamares
 sudo nano /mnt/etc/nixos/hosts/tower/default.nix
@@ -106,7 +106,7 @@ sudo mv /etc/nixos /etc/nixos.backup
 sudo ln -s ~/nixos-base /etc/nixos
 
 # Copy hardware config
-sudo cp /etc/nixos.backup/hardware-configuration.nix /etc/nixos/hosts/
+sudo cp /etc/nixos.backup/hardware-configuration.nix /etc/nixos/hosts/tower/hardware.nix
 
 # Edit tower.nix to match your username
 nano ~/nixos-base/hosts/tower/default.nix
@@ -169,7 +169,7 @@ Don't replace the config entirely. Instead:
 3. Import the cosmic profile:
 ```nix
 imports = [
-  ./hardware-configuration.nix
+  ./hardware.nix
   ~/nixos-base/roles/cosmic.nix
 ];
 ```

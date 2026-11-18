@@ -61,7 +61,7 @@ If you just want a working machine quickly, here's the minimal checklist:
   `hosts/<your-hostname>/default.nix`
 - [ ] In your new machine file:
   - set `networking.hostName`
-  - import the generated `hardware-configuration.nix`
+  - import the generated hardware file as `./hardware.nix`
   - pick a role by importing one of:
     - `../../roles/cosmic.nix`
     - `../../roles/gnome.nix`

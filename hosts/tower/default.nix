@@ -4,7 +4,7 @@
 
   imports = [
     ../../modules/base.nix
-    ../hardware-configuration.nix
+    ./hardware.nix
 
     # Desktop environment - Switched to KDE for stability
     ../../roles/kde.nix
@@ -45,6 +45,7 @@
       "noatime"            # SSD optimization
       "nodiratime"         # SSD optimization
       "discard"            # Enable TRIM support
+      "nofail"             # boot without the game drive attached
       "commit=60"          # Write to disk every 60s (better for gaming loads)
     ];
   };
@@ -296,10 +297,10 @@
   };
 
   # Filesystem optimizations for SSDs
-  # These options are merged with hardware-configuration.nix
+  # These options are merged with hardware.nix
   fileSystems."/".options = [ "noatime" "nodiratime" "discard" "commit=60" ];
   
-  # For FAT /boot partition, only add noatime (preserve fmask/dmask from hardware-configuration.nix)
+  # For FAT /boot partition, only add noatime (preserve fmask/dmask from hardware.nix)
   fileSystems."/boot".options = lib.mkAfter [ "noatime" ];
 
   # COSMIC desktop personalization

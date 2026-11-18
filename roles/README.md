@@ -9,7 +9,7 @@ machine-specific settings like `networking.hostName`, `fileSystems`, or
 
 These roles are **incomplete system configurations**. They
 cannot be installed directly without adding:
-1. `fileSystems` configuration (usually from `hardware-configuration.nix`)
+1. `fileSystems` configuration (usually from the host's `hardware.nix`)
 2. At least one user account
 3. A hostname
 

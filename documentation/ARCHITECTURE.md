@@ -143,7 +143,7 @@ Example:
 {
   imports = [
     ../../modules/base.nix
-    ./hardware-configuration.nix
+    ./hardware.nix
     ../../roles/gnome.nix
   ];
 
@@ -163,7 +163,7 @@ flake.nix
   └─> nixosConfigurations.<name>
        └─> hosts/<name>/default.nix or roles/<name>.nix
             ├─> modules/base.nix (base)
-            ├─> hardware-configuration.nix (hardware)
+            ├─> hardware.nix (hardware)
             └─> roles/<desktop>.nix (desktop)
                  ├─> modules/common-packages.nix
                  ├─> modules/<desktop>.nix

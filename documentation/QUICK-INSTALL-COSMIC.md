@@ -162,7 +162,7 @@ sudo nixos-generate-config --root /mnt
 This creates `/mnt/etc/nixos/hardware-configuration.nix`. We need to copy it:
 
 ```bash
-sudo cp /mnt/etc/nixos/hardware-configuration.nix /mnt/nixos-base/hosts/hardware-configuration.nix
+sudo cp /mnt/etc/nixos/hardware-configuration.nix /mnt/nixos-base/hosts/tower/hardware.nix
 ```
 
 ---
@@ -223,7 +223,7 @@ The hardware config needs to be added after first boot. For now, the install wil
 Copy the generated hardware config:
 
 ```bash
-sudo cp /mnt/etc/nixos/hardware-configuration.nix /mnt/nixos-base/hosts/hardware-configuration.nix
+sudo cp /mnt/etc/nixos/hardware-configuration.nix /mnt/nixos-base/hosts/tower/hardware.nix
 ```
 
 You can also verify the tower.nix configuration:

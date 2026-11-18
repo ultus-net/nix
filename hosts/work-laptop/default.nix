@@ -7,6 +7,7 @@
     ../../modules/base.nix
     ../../roles/cosmic.nix
     ../../modules/common-users.nix
+    ./hardware.nix
   ];
 
   # ============================================================================
@@ -35,37 +36,6 @@
     LC_TELEPHONE = "en_NZ.UTF-8";
     LC_TIME = "en_NZ.UTF-8";
   };
-
-  # ============================================================================
-  # Hardware Configuration (from nixos-generate-config)
-  # ============================================================================
-  
-  boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "vmd" "nvme" "uas" "sd_mod" ];
-  boot.initrd.kernelModules = [ ];
-  # Temporarily disabled DisplayLink support - requires manual driver download
-  boot.kernelModules = [ "kvm-intel" ];  # DisplayLink's evdi module is managed by the NixOS displaylink hardware module
-  boot.extraModulePackages = [ ];
-
-  # Use latest kernel for better hardware support
-  boot.kernelPackages = pkgs.linuxPackages_latest;
-
-  fileSystems."/" = {
-    device = "/dev/disk/by-uuid/6d493940-1d4d-42d7-ba99-841432e67da2";
-    fsType = "ext4";
-  };
-
-  fileSystems."/boot" = {
-    device = "/dev/disk/by-uuid/5ABD-49CC";
-    fsType = "vfat";
-    options = [ "fmask=0077" "dmask=0077" ];
-  };
-
-  swapDevices = [
-    { device = "/dev/disk/by-uuid/54112536-45a4-4494-9371-585008192b2b"; }
-  ];
-
-  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-  hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 
   # ============================================================================
   # COSMIC Desktop Configuration

@@ -90,10 +90,11 @@
   #   nixos-generate-config --root /mnt
   #
   # This creates /mnt/etc/nixos/hardware-configuration.nix
-  # Copy it to your nixos-base directory and uncomment the line below:
+  # Copy it to your nixos-base directory as hosts/<name>/hardware.nix and
+  # uncomment the line below:
   #
   # imports = [
-  #   ./hardware-configuration.nix  # UNCOMMENT THIS LINE
+  #   ./hardware.nix  # UNCOMMENT THIS LINE
   # ];
   #
   # Without this, your system may not boot properly!

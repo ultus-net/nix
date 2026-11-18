@@ -21,7 +21,7 @@ Example `hosts/my-pc/default.nix`:
     ../../modules/base.nix
     ../../roles/cosmic.nix
     ../../modules/common-users.nix
-    ./hardware-configuration.nix  # generated during install
+    ./hardware.nix  # generated during install
   ];
   networking.hostName = "my-pc";
 }
