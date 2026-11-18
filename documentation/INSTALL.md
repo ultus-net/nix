@@ -281,9 +281,10 @@ Note: this repo no longer uses nested desktop flakes; every host is a top-level
   * Use `nix --extra-experimental-features 'nix-command flakes' <command>` or
     add `nix.extraOptions` to your NixOS configuration as shown above.
 
-- "cannot find flake 'flake:flakes/gnome' in the flake registries":
-  * This repo no longer uses nested desktop flakes. Use a top-level output like
-    `/mnt/nix#tower`.
+- "cannot find flake ... in the flake registries":
+  * This repo does not publish nested desktop flakes. Use a top-level output
+    like `/mnt/nix#tower`, and check the available names with
+    `nix flake show /mnt/nix`.
 
 - Flake evaluation errors during install:
   * Run `nix --extra-experimental-features 'nix-command flakes' flake show

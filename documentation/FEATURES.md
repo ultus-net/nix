@@ -199,6 +199,24 @@ imports = [ ../modules/laptop.nix ];
 
 The module applies its defaults on import, so the import is enough.
 
+### Agent Sandbox (`agent-sandbox.nix`)
+Run a coding agent against one checkout without giving it the machine.
+
+**What's Included:**
+- `agent-sandbox run <project>`: a transient `systemd-nspawn` session with the
+  project at `/workspace`, a read-only store, and a tmpfs home
+- An allowlisting `CONNECT` proxy: the session has no network interface except
+  loopback, so the proxy is its only route out
+- `MemoryMax`, `CPUQuota` and `TasksMax` on the session scope
+
+**Enable:**
+```nix
+imports = [ ../../modules/agent-sandbox.nix ];
+machines.agentSandbox.enable = true;
+```
+
+See [AGENT-SANDBOX.md](AGENT-SANDBOX.md) for the boundary and its limits.
+
 ### Wallpapers
 NixOS wallpapers from `nixos-artwork` with automatic rotation support for desktop environments.
 
@@ -244,6 +262,8 @@ See `home/README.md` for Home Manager documentation.
 - Root login disabled
 - Password authentication disabled
 - Fail2ban available in security module
+- Agent sessions are opt-in per host (`machines.agentSandbox`) and reach the
+  network only through an allowlisting proxy, on port 443, for named hosts
 
 See `SECRETS.md` for secrets management options.
 

@@ -197,9 +197,28 @@ nix build .#nixosConfigurations.work-laptop.config.system.build.vm
 ./result/bin/run-*-vm
 ```
 
+## Agent Sessions
+
+`tower` and `work-laptop` install `agent-sandbox`. It runs an agent against one
+checkout in a throwaway container with no route to the internet except an
+allowlisting proxy:
+
+```bash
+sudo agent-sandbox run ~/Projects/some-checkout          # interactive shell
+sudo agent-sandbox run ~/Projects/some-checkout -- claude
+agent-sandbox list
+agent-sandbox stop --all
+```
+
+What the session can reach, what it cannot, and the first-run checks are in
+[AGENT-SANDBOX.md](AGENT-SANDBOX.md).
+
 ## Updating Your System
 
-### Update Flake Inputs
+A host with `machines.autoUpgrade.enable` rebuilds from `origin/main` on its own
+schedule, after fast-forwarding the checkout, so only commits that passed CI
+reach it. To update by hand:
+
 ```bash
 # Update all inputs
 nix flake update

@@ -66,6 +66,16 @@ python3 ./scripts/check-layering.py
 python3 ./scripts/check-layering.py --self-test
 ```
 
+### `check-no-password-hash.sh`
+Fail when a committed password hash appears outside `hosts/example/`. The needle
+is assembled at runtime, so the script does not match itself. CI runs it as
+`checks.<system>.no-initial-password`.
+
+**Usage:**
+```bash
+./scripts/check-no-password-hash.sh .
+```
+
 ### `collect-system-info.sh`
 Gather system information for troubleshooting.
 
