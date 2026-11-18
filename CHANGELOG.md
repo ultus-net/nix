@@ -68,6 +68,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   name in comments and in `flake.nix`. The needle is now assembled at runtime
   in `scripts/check-no-password-hash.sh`, and the search skips hidden
   directories.
+- The `work-laptop` host test asserted `systemctl is-enabled fwupd.service`.
+  fwupd's unit is linked into `/etc/systemd/system` rather than enabled, so
+  `is-enabled` exits 1 and the test failed on `main`. It now asserts
+  `tlp.service`, which this host enables through `services.tlp`.
 
 ### Security
 

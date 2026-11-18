@@ -52,7 +52,9 @@ in
       machine.wait_for_unit("docker.service")
     '';
 
+  # fwupd's unit ships linked rather than enabled, so `is-enabled` reports it
+  # not-enabled. TLP is enabled by this host's config and only this host's.
   work-laptop = mkHostTest "work-laptop" ../hosts/work-laptop/default.nix [ ] ''
-    machine.succeed("systemctl is-enabled fwupd.service")
+    machine.succeed("systemctl is-enabled tlp.service")
   '';
 }

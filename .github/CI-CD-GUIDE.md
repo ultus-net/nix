@@ -32,7 +32,7 @@ Each test boots the real host module in QEMU:
   cannot provide.
 - The test waits for `multi-user.target` and `sshd.service`, asserts
   `firewall.service` is active, then checks one host-specific service:
-  `docker.service` on tower, `fwupd.service` enabled on work-laptop.
+  `docker.service` on tower, `tlp.service` enabled on work-laptop.
 
 `nixosTest` needs KVM. The workflow sets
 `system-features = nixos-test benchmark big-parallel kvm`.
