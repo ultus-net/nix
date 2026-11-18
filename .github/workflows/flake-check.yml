@@ -23,10 +23,11 @@ jobs:
       - name: Validate profiles & machines import Home Manager
         run: bash ./scripts/validate-hosts-home-manager.sh
 
-      - name: Ensure profiles and machines exist
-        run: |
-          test -n "$(ls -A profiles 2>/dev/null || true)"
-          test -n "$(ls -A machines 2>/dev/null || true)"
+      - name: Check layering
+        run: python3 ./scripts/check-layering.py
+
+      - name: Check layering self-test
+        run: python3 ./scripts/check-layering.py --self-test
 
       - name: Install Nix (for syntax checking)
         uses: cachix/install-nix-action@v27
@@ -62,14 +63,6 @@ jobs:
           nix flake show --json . > flake.json
           cat flake.json | jq '.nixosConfigurations | keys'
 
-      - name: Check all expected configurations exist
-        run: |
-          # Check for base-server
-          jq -e '.nixosConfigurations | has("base-server")' flake.json
-          # Check for all desktop environments
-          for desktop in cosmic gnome kde cinnamon xfce hyprland; do
-            jq -e ".nixosConfigurations | has(\"${desktop}-workstation\")" flake.json
-          done
 
       - name: Verify homeConfigurations exist
         run: |
@@ -91,12 +84,8 @@ jobs:
       matrix:
         config:
           - base-server
-          - cosmic-workstation
-          - gnome-workstation
-          - kde-workstation
-          - cinnamon-workstation
-          - xfce-workstation
-          - hyprland-workstation
+          - tower
+          - work-laptop
     steps:
       - name: Checkout
         uses: actions/checkout@v4
