@@ -59,6 +59,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   only egress. `documentation/AGENT-SANDBOX.md` states what it isolates and what
   it does not.
 
+### Fixed
+
+- `pince` comes from nixpkgs. The in-tree package pinned `v0.4.4`, a tag
+  upstream has since dropped, so `nix build .#nixosConfigurations.tower`
+  failed on a 404. The 260-line local patch set is deleted with it.
+- The password-hash gate searched for its own needle and matched the option
+  name in comments and in `flake.nix`. The needle is now assembled at runtime
+  in `scripts/check-no-password-hash.sh`, and the search skips hidden
+  directories.
+
 ### Security
 
 - No password hash is committed for a real host. The account starts locked and

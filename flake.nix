@@ -120,11 +120,7 @@
         # the shape and is not exported.
         no-initial-password = pkgs.runCommand "check-no-initial-password" { } ''
           cd ${self}
-          if grep -rn 'initialHashedPassword' --include='*.nix' . \
-            | grep -v '^\./hosts/example/'; then
-            echo "initialHashedPassword outside hosts/example" >&2
-            exit 1
-          fi
+          ${pkgs.bash}/bin/bash scripts/check-no-password-hash.sh .
           touch $out
         '';
       } // import ./tests/hosts.nix { inherit self pkgs; };

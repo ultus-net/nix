@@ -101,8 +101,7 @@
 
       # No password hash is committed. The account starts locked; set the
       # first password on the console with `sudo passwd hunter` after the first
-      # switch. CI fails if `initialHashedPassword` reappears outside
-      # hosts/example.
+      # switch. CI fails if a committed hash reappears outside hosts/example.
 
       openssh.authorizedKeys.keys = [
         # Add your SSH public keys here
