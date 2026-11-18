@@ -53,12 +53,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `lib/forAllSystems.nix` and a `nixfmt-rfc-style` formatter output.
 - `checks.<system>.<host>`: a `nixosTest` per host that boots the real host
   module in QEMU.
+- `modules/agent-sandbox.nix`, enabled on `tower` and `work-laptop`
+  (`machines.agentSandbox`): an `agent-sandbox` launcher for a transient
+  `systemd-nspawn` session, and an allowlisting `CONNECT` proxy in front of its
+  only egress. `documentation/AGENT-SANDBOX.md` states what it isolates and what
+  it does not.
 
 ### Security
 
 - No password hash is committed for a real host. The account starts locked and
   the first password is set on the console after the first switch. CI fails if
   `initialHashedPassword` appears outside `hosts/example/`.
+- An agent session cannot reach the internet directly: it has no network
+  interface except loopback, and its one route out is a unix socket to a proxy
+  that accepts `CONNECT` on port 443 for allowlisted names only. A literal IP is
+  refused and there is no resolver inside the session.
+- An agent session cannot use the Nix daemon, so it cannot build a
+  fixed-output derivation whose builder would run on the host network. The store
+  is mounted read-only and the daemon socket is not mounted.
 
 ### Added - Performance Optimizations (January 2026)
 

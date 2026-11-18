@@ -7,6 +7,7 @@
     ../../modules/base.nix
     ../../roles/kde.nix
     ../../modules/auto-upgrade.nix
+    ../../modules/agent-sandbox.nix
     ./hardware.nix
   ];
 
@@ -15,6 +16,8 @@
   # ============================================================================
   
   networking.hostName = "work-laptop";
+
+  machines.agentSandbox.enable = true;
 
   # Automatic updates follow origin/main, so a PR gates every change.
   machines.autoUpgrade = {

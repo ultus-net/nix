@@ -22,9 +22,14 @@
     ../../modules/virtualization.nix
     ../../modules/containers.nix
     ../../modules/auto-upgrade.nix
+    ../../modules/agent-sandbox.nix
     ../../modules/deploy-config.nix
     # NOTE: zram.nix is already imported via modules/base.nix
   ];
+
+  # Agent sessions run in a transient container: no host home, no daemon
+  # socket, and egress only through the allowlisting proxy.
+  machines.agentSandbox.enable = true;
 
   # Machine identity
   networking.hostName = "tower";

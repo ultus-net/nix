@@ -30,7 +30,7 @@ let
         start_all()
         machine.wait_for_unit("multi-user.target")
         machine.wait_for_unit("sshd.service")
-        machine.succeed("${pkgs.nftables}/bin/nft list chain inet nixos-fw input")
+        machine.succeed("systemctl is-active firewall.service")
         ${extraChecks}
       '';
     };

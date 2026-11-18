@@ -13,6 +13,8 @@ This directory contains modular NixOS configuration fragments. Each module is op
 - **`nvidia.nix`** - NVIDIA proprietary driver configuration
 - **`wallpapers.nix`** - NixOS official wallpaper collection with automatic rotation
 - **`auto-upgrade.nix`** - Weekly rebuild from a reviewed `origin/main` commit
+- **`agent-sandbox.nix`** - Transient `systemd-nspawn` session with an
+  allowlisting CONNECT proxy, opt-in per host via `machines.agentSandbox`
 
 ### Package Collections
 - **`common-packages.nix`** - Essential CLI tools and modern replacements (htop, btop, ripgrep, fzf, eza, bat, git, etc.)

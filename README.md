@@ -38,6 +38,7 @@ See [INSTALL.md](documentation/INSTALL.md) for the full installation procedure.
 
 ### Advanced Topics
 - **[PERFORMANCE.md](documentation/PERFORMANCE.md)** - Gaming and performance tuning
+- **[AGENT-SANDBOX.md](documentation/AGENT-SANDBOX.md)** - Isolated agent sessions, allowlisted egress
 - **[ARCHITECTURE.md](documentation/ARCHITECTURE.md)** - Repository structure and design
 - **[TROUBLESHOOTING.md](documentation/TROUBLESHOOTING.md)** - Common issues and solutions
 - **[CONTRIBUTING.md](documentation/CONTRIBUTING.md)** - How to contribute

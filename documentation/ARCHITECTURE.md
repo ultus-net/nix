@@ -11,8 +11,12 @@ nix/
 ├── roles/                 # Desktop environment roles
 ├── hosts/                 # Machine-specific configurations
 ├── home/                  # Home Manager configurations
+├── pkgs/                  # Scripts and sources the modules install
+├── tests/                 # nixosTest definitions, one per host
+├── lib/                   # Flake output helpers
+├── containers/            # Dev container image
 ├── scripts/               # Helper scripts
-└── .github/              # CI/CD workflows
+└── .github/               # CI/CD workflows
 ```
 
 ## Design Philosophy
@@ -35,6 +39,21 @@ The core configuration (`modules/base.nix`) is desktop-agnostic:
 - System maintenance
 
 Desktop-specific configuration lives in `roles/` and their imported modules.
+
+### Agent Sessions Are Contained
+
+`modules/agent-sandbox.nix` installs an `agent-sandbox` launcher and an
+allowlisting `CONNECT` proxy. A session is a transient `systemd-nspawn`
+container: read-only store, one read-write project bind, tmpfs home, loopback
+only, and egress solely through the proxy's unix socket. It is opt-in per host
+through `machines.agentSandbox.enable`, so nothing about agent isolation reaches
+a host that did not ask for it. See [AGENT-SANDBOX.md](AGENT-SANDBOX.md).
+
+### Hosts Are Tested, Not Inspected
+
+`tests/hosts.nix` builds a `nixosTest` per host from the real host module, with
+QEMU's disk and bootloader substituted for the host's. CI runs those, so a host
+that cannot reach `multi-user.target` fails the pull request.
 
 ## Flake Structure
 
@@ -189,8 +208,8 @@ Home Manager is integrated two ways:
    for `base-server`, `tower` and `work-laptop`
 
 Each host test boots the real host module with QEMU's root disk and without the
-NVIDIA GPU, waits for `multi-user.target`, and asserts `sshd`, the nftables
-firewall chain, and a host-specific service.
+NVIDIA GPU, waits for `multi-user.target`, and asserts `sshd`, an active
+`firewall.service`, and a host-specific service.
 
 See `.github/CI-CD-GUIDE.md` for complete pipeline documentation.
 
