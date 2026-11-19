@@ -29,12 +29,14 @@ role is a build input.
 # hosts/tower/default.nix
 imports = [
   ./hardware.nix
-  ../../roles/kde.nix    # kde, dux, hyprland, xfce, or base
+  ../../roles/kde.nix    # kde, dux, hyprland, xfce, noctalia, or base
 ];
 ```
 
+
 `scripts/switch-desktop.sh <desktop> [host]` rewrites that import line and
-rebuilds. The valid names are `kde`, `dux`, `hyprland`, `xfce` and `base`.
+rebuilds. The valid names are `kde`, `dux`, `hyprland`, `xfce`, `noctalia` and
+`base`.
 
 The Dux Shell role has a VM-only host, `hosts/dux-vm/`, for looking at the
 desktop without changing what a real machine runs:
@@ -42,6 +44,13 @@ desktop without changing what a real machine runs:
 ```bash
 nix build .#nixosConfigurations.dux-vm.config.system.build.vm
 ./result/bin/run-dux-vm-vm
+```
+
+The Noctalia role has a VM-only preview as well:
+
+```bash
+nix build .#nixosConfigurations.noctalia-vm.config.system.build.vm
+./result/bin/run-noctalia-vm-vm
 ```
 
 The VM autologins as `dux` and asks QEMU for a virgl display. If the window is

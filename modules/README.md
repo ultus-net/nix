@@ -33,6 +33,7 @@ is what `scripts/check-layering.py` enforces.
 | `xfce.nix` | `xfce` | nothing until enabled; composed by `roles/xfce.nix` |
 | `hyprland.nix` | `hyprland` | nothing until enabled; composed by `roles/hyprland.nix` |
 | `dux.nix` | `dux` | nothing until enabled; composed by `roles/dux.nix` |
+| `noctalia.nix` | `noctalia` | Umbriel + Noctalia shell; composed by `roles/noctalia.nix` |
 
 ## Options worth knowing
 

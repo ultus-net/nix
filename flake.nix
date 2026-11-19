@@ -145,6 +145,9 @@
 
         # VM-only preview of the Dux Shell desktop. Not installed on hardware.
         dux-vm = mkSystem ./hosts/dux-vm/default.nix;
+
+        # VM-only preview of the Noctalia desktop. Not installed on hardware.
+        noctalia-vm = mkSystem ./hosts/noctalia-vm/default.nix;
       };
 
       templates = {

@@ -28,6 +28,7 @@ enabled.
 | `auto-upgrade.nix` | `machines.autoUpgrade.enable` | no |
 | `deploy-config.nix` | `deployConfig.enable` | no |
 | `dux.nix` | `dux.enable` | no |
+| `noctalia.nix` | `noctalia.enable` | no |
 
 The desktops are roles, not modules: `roles/kde.nix`, `roles/hyprland.nix`,
 `roles/xfce.nix`, `roles/dux.nix`, `roles/base.nix`. `modules/kde.nix`,

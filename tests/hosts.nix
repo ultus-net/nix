@@ -64,4 +64,9 @@ in
     machine.succeed("test -f /etc/systemd/user/dms.service")
     machine.succeed("systemctl is-enabled sddm.service")
   '';
+
+  noctalia-vm = mkHostTest "noctalia-vm" ../hosts/noctalia-vm/default.nix [ ] ''
+    machine.succeed("test -f /etc/systemd/user/noctalia.service")
+    machine.succeed("systemctl is-enabled greetd.service")
+  '';
 }

@@ -69,6 +69,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   VM-only host that autologins to it, built with
   `nix build .#nixosConfigurations.dux-vm.config.system.build.vm`.
 
+- `roles/noctalia.nix` and `modules/noctalia.nix`: the Noctalia desktop role
+  (Umbriel compositor, Noctalia shell), `services.displayManager.noctalia-greeter`
+  (greetd-based greeter) and `pkgs/luciole` packaged in-tree at a pinned
+  upstream commit. `hosts/noctalia-vm/` is a VM-only preview that autologins the
+  `noctalia` user.
+
 ### Fixed
 
 - `pince` comes from nixpkgs. The in-tree package pinned `v0.4.4`, a tag

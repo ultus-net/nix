@@ -87,7 +87,7 @@ Top level:
 
 | Output | What |
 | --- | --- |
-| `nixosConfigurations` | `base-server`, `tower`, `work-laptop`, `dux-vm` |
+| `nixosConfigurations` | `base-server`, `tower`, `work-laptop`, `dux-vm`, `noctalia-vm` |
 | `homeConfigurations."hunter@x86_64-linux"` | the standalone HM profile |
 | `templates.homeManager` | a starting point for another HM config |
 
