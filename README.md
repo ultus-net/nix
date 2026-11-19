@@ -63,27 +63,6 @@ rebuild with `system.autoUpgrade`, so only commits that passed CI reach a
 machine. `machines.autoUpgrade` records the schedule and the checkout path.
 Input updates stay manual: `nix flake update`, then a rebuild.
 
-## Documentation
-
-| Page | Covers |
-| --- | --- |
-| [INSTALL.md](documentation/INSTALL.md) | Partitioning, `nixos-install`, first password, verification |
-| [USAGE.md](documentation/USAGE.md) | Rebuilds, desktops, updates, rollback, agent sessions |
-| [FEATURES.md](documentation/FEATURES.md) | Every module and what enables it |
-| [ARCHITECTURE.md](documentation/ARCHITECTURE.md) | Layering, outputs, and why the tree looks like this |
-| [AGENT-SANDBOX.md](documentation/AGENT-SANDBOX.md) | What an agent session can reach, and what it cannot |
-| [PERFORMANCE.md](documentation/PERFORMANCE.md) | Gaming and kernel tuning, all opt-in |
-| [SECRETS.md](documentation/SECRETS.md) | Credentials and where they live |
-| [TROUBLESHOOTING.md](documentation/TROUBLESHOOTING.md) | Failures already hit, and their fixes |
-| [FAQ.md](documentation/FAQ.md) | Decisions this tree encodes, and why |
-| [CI-CD-GUIDE.md](.github/CI-CD-GUIDE.md) | What each workflow proves |
-| [modules/](modules/README.md) | The module inventory |
-| [roles/](roles/README.md) | The desktop roles |
-| [hosts/](hosts/README.md) | Host conventions and overrides |
-| [home/](home/README.md) | The Home Manager profiles |
-| [scripts/](scripts/README.md) | Each script and its gate |
-| [containers/dev/](containers/dev/README.md) | The toolchain image |
-
 ## Checks
 
 `nix flake check` runs the layering gate, the password gate, the proxy unit test,
