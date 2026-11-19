@@ -32,9 +32,13 @@
   # Enable Hyprland desktop
   hyprland.enable = true;
   waylandUtils.enable = true;
+  waylandUtils.sessionTarget = "hyprland-session.target";
 
   # Ensure zsh is enabled if set as default shell
   programs.zsh.enable = true;
+
+  # Nautilus links GVfs for trash, removable devices and remote locations.
+  services.gvfs.enable = true;
 
   # Enable NixOS wallpaper collection by default
   machines.wallpapers.enable = lib.mkDefault true;

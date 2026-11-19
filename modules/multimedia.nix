@@ -45,7 +45,6 @@ in {
       slurp      # Wayland region selector
       flameshot  # X11/Wayland screenshot tool
       peek       # GIF recorder
-      obs-studio # Screen recording/streaming
       
     ] ++ cfg.extraPackages
       ++ lib.optionals cfg.enableVideoEditing [
@@ -56,5 +55,14 @@ in {
       audacity
       ardour
     ];
+
+    # OBS comes from its module, which wraps the plugins into the binary. A raw
+    # obs-studio package ignores them, so a capture plugin would load nothing.
+    programs.obs-studio = {
+      enable = true;
+      plugins = with pkgs.obs-studio-plugins; [
+        obs-vkcapture
+      ];
+    };
   };
 }

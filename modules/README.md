@@ -10,7 +10,7 @@ is what `scripts/check-layering.py` enforces.
 | --- | --- | --- |
 | `base.nix` | none | sets `stateVersion`, flakes, `nix.gc`, locale; imports `zram.nix` |
 | `networking.nix` | none | NetworkManager |
-| `security.nix` | none | firewall, sshd, key-only auth, no root login |
+| `security.nix` | `securityDefaults` | firewall, SSH agent, `sops`; fprintd and avahi only when enabled |
 | `audio.nix` | none | PipeWire |
 | `fonts.nix` | none | fontconfig, JetBrains Mono and FiraCode Nerd Fonts, `noto-fonts-color-emoji` |
 | `home-manager.nix` | none | the HM NixOS module |

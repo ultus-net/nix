@@ -6,7 +6,7 @@
 
   config = lib.mkIf config.hyprland.enable {
     environment.systemPackages = with pkgs; [
-      hyprland alacritty brave nautilus yazi lazygit lazydocker neovim feh libva-utils zsh btop powertop bluetui networkmanager waybar swww
+      hyprland alacritty brave nautilus yazi lazygit lazydocker neovim feh libva-utils zsh btop powertop bluetui networkmanager waybar swww grim slurp
     ];
     users.defaultUserShell = pkgs.zsh;
     environment.etc = {
@@ -100,6 +100,8 @@
         bind = SUPER, Y, exec, $terminal -e yazi
         bind = SUPER, L, exec, $terminal -e lazygit
         bind = SUPER, C, exec, $terminal -e lazydocker
+        # Region screenshot, annotated in satty before it is saved.
+        bind = , Print, exec, grim -g "$(slurp)" - | satty --filename -
       '';
       "xdg/hypr/autostart.conf".text = ''
         exec-once = waybar &

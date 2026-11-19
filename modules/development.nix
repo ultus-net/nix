@@ -6,6 +6,7 @@
   environment.systemPackages = with pkgs; [
     # Language Runtimes
     python3
+    uv           # Python environments, matching the dev image
     nodejs_22
     pnpm
     bun
@@ -18,6 +19,7 @@
     ninja
     ccache
     clang
+    gdb
     pkg-config
     gnumake
     gcc

@@ -24,8 +24,13 @@
 
   noctalia.enable = true;
   waylandUtils.enable = true;
+  waylandUtils.sessionTarget = "umbriel-session.target";
 
   programs.zsh.enable = true;
+
+  # Luciole and Nautilus link GVfs for trash, removable devices and remote
+  # locations. The NixOS service wires D-Bus, FUSE and the GIO module.
+  services.gvfs.enable = true;
 
   machines.wallpapers.enable = lib.mkDefault true;
 

@@ -74,9 +74,6 @@ in {
       age
       gnupg
       
-      # Clipboard (Wayland)
-      wl-clipboard
-      
       # Enhanced CLI Tools
       fzf          # Fuzzy finder (essential for productivity)
       zoxide       # Smarter cd command
@@ -89,12 +86,6 @@ in {
       nix-output-monitor
       nvd
       nix-tree
-      
-      # Official NixOS wallpapers from nixos-artwork
-      nixos-artwork.wallpapers.nineish-dark-gray
-      nixos-artwork.wallpapers.simple-blue
-      nixos-artwork.wallpapers.stripes-logo
-      nixos-artwork.wallpapers.mosaic-blue
     ];
 
     # Helpful aliases for config management

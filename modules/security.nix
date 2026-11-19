@@ -1,32 +1,41 @@
 { config, pkgs, lib, ... }:
+let
+  cfg = config.securityDefaults;
+in
 {
   # Security module: small, pragmatic defaults for desktop usage; each line
   # explains the reason for the chosen default.
 
-  # Enable fingerprintd service for fingerprint authentication when hardware
-  # and PAM integration are present.
-  services.fprintd.enable = true;
+  options.securityDefaults = {
+    # A headless host needs neither a fingerprint daemon nor mDNS discovery,
+    # so both desktop extras stay opt-in. The role that owns a desktop turns
+    # them on.
+    enableFprintd = lib.mkEnableOption "the fingerprint daemon";
 
-  # Avahi provides mDNS/zeroconf for local network discovery (useful for
-  # AirPrint, printers, and other services). `openFirewall` relaxes firewall
-  # rules for local service discovery when enabled.
-  services.avahi = {
-    enable = true;
-    nssmdns4 = true;
-    openFirewall = true;
+    enableAvahi = lib.mkEnableOption "mDNS/zeroconf service discovery";
   };
 
-  # Start an SSH agent in user sessions to hold private keys for authentication.
-  programs.ssh.startAgent = true;
+  config = {
+    # Fingerprint authentication, when the hardware and PAM integration exist.
+    services.fprintd.enable = cfg.enableFprintd;
 
-  # Keep the firewall enabled by default and avoid opening extra ports here.
-  networking.firewall.enable = true;
+    # Avahi provides mDNS/zeroconf for local network discovery (printers and
+    # other services). `openFirewall` relaxes the rules for that discovery.
+    services.avahi = lib.mkIf cfg.enableAvahi {
+      enable = true;
+      nssmdns4 = true;
+      openFirewall = true;
+    };
 
-  # Credential and boot-integrity tooling. The machine already carries a FIDO2
-  # key for sudo, so ykman and age-backed sops are the matching CLI tools.
-  environment.systemPackages = with pkgs; [
-    sops
-    sbctl
-    yubikey-manager
-  ];
+    # Start an SSH agent in user sessions to hold private keys for
+    # authentication.
+    programs.ssh.startAgent = true;
+
+    # Keep the firewall enabled by default and avoid opening extra ports here.
+    networking.firewall.enable = true;
+
+    # sops decrypts secrets at activation and needs no daemon or key material
+    # in the store, so every host can carry it.
+    environment.systemPackages = [ pkgs.sops ];
+  };
 }

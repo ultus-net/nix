@@ -68,7 +68,8 @@ in {
       gping            # Ping with graph
       iperf3           # Network performance
       tcpdump          # Packet analyzer
-      wireshark        # GUI packet analyzer
+      mtr              # Per-hop latency and loss
+      ethtool          # NIC link, driver and offload state
       nmap             # Network scanner
     ] ++ lib.optionals cfg.enableHardwareMonitoring [
       # Hardware Monitoring & Information
@@ -83,6 +84,12 @@ in {
       pciutils         # lspci and PCI tools
     ] ++ cfg.extraPackages;
     
+    # Wireshark needs its setcap wrapper and the capture group. The raw package
+    # alone cannot capture as an unprivileged user.
+    programs.wireshark = lib.mkIf cfg.enableNetworkDiagnostics {
+      enable = true;
+    };
+
     # Enable SMART monitoring daemon
     services.smartd = lib.mkIf cfg.enableHardwareMonitoring {
       enable = lib.mkDefault true;

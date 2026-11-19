@@ -2,27 +2,31 @@
 let
   cfg = config.gaming;
 
-  # Desired package attribute names to include when present in pkgs. We
-  # filter by presence to make the module evaluation robust across
-  # different nixpkgs snapshots (avoid evaluation-time errors).
-  # NOTE: "steam" is excluded here; use gaming.enableSteam to enable it via programs.steam
-  desiredAttrs = [
-    "lutris" "steamcmd" "heroic" "gamescope" "mangohud"
-    "vkbasalt" "latencyflex" "gamemode" "libFAudio" "vulkan-tools"
-    "vulkan-loader" "wine" "protonup-qt" "protontricks" "winetricks"
-    "obs_vkcapture" "mangohud-profiles"
+  # Explicit, not presence-filtered: a package that leaves nixpkgs must fail
+  # evaluation here instead of disappearing from the set without a word.
+  # NOTE: "steam" is excluded; use gaming.enableSteam for programs.steam.
+  gamingPackages = with pkgs; [
+    lutris
+    heroic
+    gamescope
+    mangohud
+    vkbasalt
+    gamemode
+    faudio
+    vulkan-tools
+    vulkan-loader
+    wine
+    protonup-qt
+    protontricks
+    winetricks
   ];
 
-  # Map the filtered attribute names to actual package values from pkgs.
-  available = builtins.map (n: builtins.getAttr n pkgs)
-    (builtins.filter (n: lib.hasAttr n pkgs) desiredAttrs);
-
-  # List of 32-bit compatibility packages we want when available.
-  lib32Desired = [ "vulkan-loader" "libFAudio" ];
-  lib32Available = if lib.hasAttr "lib32Packages" pkgs
-    then builtins.map (n: builtins.getAttr n pkgs.lib32Packages)
-           (builtins.filter (n: lib.hasAttr n pkgs.lib32Packages) lib32Desired)
-    else [];
+  # 32-bit libraries Proton needs. `pkgsi686Linux` resolves to real i686
+  # builds; the old presence filter looked for a set that does not exist.
+  lib32Packages = with pkgs.pkgsi686Linux; [
+    vulkan-loader
+    faudio
+  ];
 in {
   options.gaming = {
     enable = lib.mkEnableOption "Enable gaming QoL packages and helpers (opt-in)";
@@ -44,6 +48,12 @@ in {
     # Toggle for installing common i386 (lib32) compatibility packages.
     enableI386Compat = lib.mkEnableOption "Add common i386/lib32 compatibility packages when available";
 
+    # Both firewall openings default to closed. Remote Play only needs the
+    # ports while streaming, and the dedicated-server ports only when hosting.
+    steamRemotePlayFirewall = lib.mkEnableOption "open the Steam Remote Play firewall ports";
+
+    steamDedicatedServerFirewall = lib.mkEnableOption "open the Source dedicated-server firewall ports";
+
     # Informational toggle: if true, the module may expose instructions
     # or notes about Flatpaks (it does not install Flatpaks automatically).
     enableFlatpaks = lib.mkEnableOption "Expose convenience notes for installing common Flatpaks (no automatic flatpak installs)";
@@ -61,13 +71,13 @@ in {
   config = lib.mkIf cfg.enable {
     # Compose systemPackages from user-specified packages plus the available
     # gaming packages and optional lib32 compatibility packages.
-    environment.systemPackages = (cfg.packages or []) ++ available ++ (if cfg.enableI386Compat then lib32Available else []);
+    environment.systemPackages = (cfg.packages or []) ++ gamingPackages ++ lib.optionals cfg.enableI386Compat lib32Packages;
 
     # Enable Steam via the proper NixOS module (avoids steam-unwrapped build issues)
     programs.steam = lib.mkIf cfg.enableSteam {
       enable = true;
-      remotePlay.openFirewall = true; # Open ports in the firewall for Steam Remote Play
-      dedicatedServer.openFirewall = true; # Open ports in the firewall for Source Dedicated Server
+      remotePlay.openFirewall = cfg.steamRemotePlayFirewall;
+      dedicatedServer.openFirewall = cfg.steamDedicatedServerFirewall;
       
       # Add extra packages to the FHS environment for compatibility
       extraCompatPackages = with pkgs; [

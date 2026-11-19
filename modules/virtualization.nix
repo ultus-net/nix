@@ -20,12 +20,11 @@ in {
     # Enable virt-manager GUI
     programs.virt-manager.enable = true;
 
-    # Useful virtualization packages
+    # Useful virtualization packages. virt-manager and its firmware come from
+    # the two options above, so listing them again here would duplicate them.
     environment.systemPackages = with pkgs; [
-      virt-manager
       virt-viewer
       qemu
-      OVMF
       libguestfs  # VM disk image tools
       libvirt
     ];

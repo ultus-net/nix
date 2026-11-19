@@ -13,6 +13,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `thunar` on Xfce only. The headless role had installed a browser, a music
   client and a file manager. The shared set uses `yq-go` rather than the Python
   `yq`, matching the dev image.
+- The shared set no longer carries `wl-clipboard` or four `nixos-artwork`
+  wallpaper packs. `wl-clipboard` moved to `wayland-utils.nix`, and the only
+  wallpapers are the ones in `assets/wallpapers`.
 - Documentation is written for the owner, not for a contributor. `README.md` is
   the front page, and every page states what the tree does and why. Second-person
   tutorial tone, "getting started" framing and the contributor workflow are gone.
@@ -61,13 +64,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `wl-paste` watcher, `satty`, `wlr-randr` and `wf-recorder`. The noctalia, dux
   and hyprland roles enable it.
 - The shared package set carries `nix-output-monitor`, `nvd` and `nix-tree`, and
-  the development toolchain adds `meson`, `ninja`, `ccache` and `clang`.
-  `tower` and `work-laptop` now import `development.nix`; no host did, so its
-  list was unreachable.
-- `tower` enables `sysadmin`, `services.lact` and adds `nvitop` and `goverlay`.
+  the development toolchain adds `meson`, `ninja`, `ccache`, `clang`, `gdb` and
+  `uv`. `tower` and `work-laptop` now import `development.nix`; no host did, so
+  its list was unreachable.
+- `sysadmin.nix` gains `mtr` and `ethtool`, `tower` enables
+  `machines.containers.enableDockerCompose`, and the noctalia, dux and hyprland
+  roles enable `services.gvfs` so their file managers get trash, removable
+  devices and remote locations. Hyprland also gets `grim` and `slurp` with a
+  Print binding that annotates in `satty`.
+- `tower` enables `sysadmin`, `services.lact` and `programs.yubikey-manager`, and
+  adds `goverlay` and `sbctl`. `nvtop` was already supplied by `nvidia.nix`, so
+  no second GPU monitor is added.
   The home profile adds `zathura`, `pandoc`, `libreoffice`, `thunderbird`,
-  `signal-desktop` and `keepassxc`, and `security.nix` adds `sops`, `sbctl` and
-  `yubikey-manager`.
+  `signal-desktop` and `keepassxc`, and `security.nix` adds `sops`.
 - `dev-image` flake output and `containers/dev`: an OCI toolchain image with
   Node, Python, Go, and agent CLIs, built from the flake's nixpkgs. CI publishes
   it to `ghcr.io/ultus-net/nix-dev`.
@@ -101,6 +110,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The `dux-vm` host test asserted `systemctl is-enabled sddm.service`, which
   exits 4 because SDDM is reached through `display-manager.service` rather than
   by its own unit name. It now asserts that alias exists.
+- The `cliphist` watcher was bound to `graphical-session.target`, which neither
+  Umbriel nor Hyprland starts. It now binds to `waylandUtils.sessionTarget`, and
+  the noctalia, dux and hyprland roles set the real target.
+- `gaming.nix` filtered its package list by attribute presence, which hid four
+  entries nixpkgs had dropped (`latencyflex`, `libFAudio`, `obs_vkcapture`,
+  `mangohud-profiles`) and made `enableI386Compat` a no-op because
+  `lib32Packages` does not exist. The list is explicit, `faudio` replaces
+  `libFAudio`, and the 32-bit set comes from `pkgsi686Linux`. Steam Remote Play
+  and the dedicated-server firewall openings are now options defaulting to
+  `false`; both were unconditionally open.
+- `obs-studio` was installed as a bare package, so the capture plugin would not
+  have loaded. It comes from `programs.obs-studio` with `obs-vkcapture` wrapped
+  in. `wireshark` comes from `programs.wireshark`, which supplies the `dumpcap`
+  setcap wrapper, and `tower` adds `hunter` to the `wireshark` group.
+  `yubikey-manager` comes from `programs.yubikey-manager`, which enables PC/SC
+  and the udev rules; the bare package could not reach the key.
+- `security.nix` put `fprintd` and `avahi` on every host it was imported by,
+  including the headless `base-server`. Both are now `securityDefaults`
+  options defaulting to `false`, and `tower` sets them.
+- `virtualization.nix` listed `virt-manager` and `OVMF` beside
+  `programs.virt-manager.enable` and the libvirtd QEMU firmware settings.
+  `modules/wallpapers.nix` carried an unused `wallpaperPackages` binding of 44
+  `nixos-artwork` derivations. Both are deleted.
+- The dev shell pinned the Python `yq` while the shared set and the dev image
+  use `yq-go`, so the same command had two implementations. The shell uses
+  `yq-go`.
 - `modules/sysadmin.nix` did not evaluate: it listed `dogdns`, which nixpkgs
   removed in favour of `doggo`. No host had enabled the module, so the break was
   invisible until `tower` turned it on.

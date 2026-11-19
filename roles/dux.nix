@@ -28,8 +28,12 @@
 
   dux.enable = true;
   waylandUtils.enable = true;
+  waylandUtils.sessionTarget = "hyprland-session.target";
 
   programs.zsh.enable = true;
+
+  # Nautilus links GVfs for trash, removable devices and remote locations.
+  services.gvfs.enable = true;
 
   machines.wallpapers.enable = lib.mkDefault true;
 
