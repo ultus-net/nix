@@ -222,6 +222,14 @@
     marksman       # Markdown LSP
     nil            # Nix LSP
 
+    # Productivity and communication
+    zathura        # PDF viewer
+    pandoc         # Document conversion
+    libreoffice    # Office suite
+    thunderbird    # Mail
+    signal-desktop # Messaging
+    keepassxc      # Password database
+
     # Additional development tools
     lazydocker     # Docker TUI
     k9s            # Kubernetes TUI (if you use k8s)

@@ -58,13 +58,12 @@ in {
       delta        # Better diff
       
       # Data processing
-      jq yq        # JSON/YAML processors
+      jq yq-go     # JSON/YAML processors
       
       # Task runner
       just
       
-      # Editor & shell
-      thunar
+      # Shell prompt
       starship
       
       # Development helpers
@@ -86,9 +85,10 @@ in {
       trash-cli    # Safe rm alternative (moves to trash)
       glow         # Markdown renderer for terminal
       
-      # Apps
-      chromium
-      spotify
+      # Nix maintenance: rebuild progress, generation diffs, store inspection
+      nix-output-monitor
+      nvd
+      nix-tree
       
       # Official NixOS wallpapers from nixos-artwork
       nixos-artwork.wallpapers.nineish-dark-gray

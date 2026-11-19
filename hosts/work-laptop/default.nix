@@ -6,6 +6,7 @@
   imports = [
     ../../modules/base.nix
     ../../roles/kde.nix
+    ../../modules/development.nix
     ../../modules/auto-upgrade.nix
     ../../modules/agent-sandbox.nix
     ./hardware.nix

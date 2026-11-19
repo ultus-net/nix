@@ -21,6 +21,7 @@ enabled.
 | `containers.nix` | `machines.containers.enable` | no |
 | `virtualization.nix` | `virtualization.enable` | no |
 | `sysadmin.nix` | `sysadmin.enable` | no |
+| `wayland-utils.nix` | `waylandUtils.enable` | no |
 | `nvidia.nix` | none | yes |
 | `pince.nix` | `pince.enable` | no |
 | `wallpapers.nix` | `machines.wallpapers.enable` | no |
@@ -46,8 +47,16 @@ Fonts, `zram.nix` compressed swap, `home-manager.nix` the HM wiring.
 ## Packages
 
 `common-packages.nix` is the CLI set: `fzf`, `zoxide`, `eza`, `bat`, `ripgrep`,
-`fd`, `lazygit`, `delta`, `starship`. It is a list, so a host adds to it rather
-than forking it.
+`fd`, `lazygit`, `delta`, `starship`. It also carries `nix-output-monitor`,
+`nvd` and `nix-tree`, because every host rebuilds itself. It is a list, so a
+host adds to it rather than forking it. Desktop applications do not belong
+here: `chromium`, `spotify`, `zed-editor`, `opencode` and `discord` come from
+the role that owns the desktop, so the headless role stays headless.
+
+`wayland-utils.nix` is the wlroots session baseline: `pwvucontrol`,
+`playerctl`, `brightnessctl`, `cliphist` with its `wl-paste` watcher, `satty`,
+`wlr-randr` and `wf-recorder`. The noctalia, dux and hyprland roles enable it.
+KDE and Xfce bring their own equivalents.
 
 `development.nix` is the toolchain: Python, Node, Go, Rust, the build tools, the
 formatters and the linters. It has no option because a machine that imports it

@@ -21,4 +21,12 @@
 
   # Keep the firewall enabled by default and avoid opening extra ports here.
   networking.firewall.enable = true;
+
+  # Credential and boot-integrity tooling. The machine already carries a FIDO2
+  # key for sudo, so ykman and age-backed sops are the matching CLI tools.
+  environment.systemPackages = with pkgs; [
+    sops
+    sbctl
+    yubikey-manager
+  ];
 }

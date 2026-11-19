@@ -23,6 +23,7 @@ is what `scripts/check-layering.py` enforces.
 | `containers.nix` | `machines.containers` | nothing until enabled |
 | `virtualization.nix` | `virtualization` | nothing until enabled |
 | `sysadmin.nix` | `sysadmin` | nothing until enabled |
+| `wayland-utils.nix` | `waylandUtils` | nothing until enabled; mixer, media keys, clipboard history, screenshot annotation |
 | `pince.nix` | `pince` | nothing until enabled |
 | `deploy-config.nix` | `deployConfig` | nothing until enabled |
 | `wallpapers.nix` | `machines.wallpapers` | nothing until enabled |

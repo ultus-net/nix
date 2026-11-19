@@ -14,6 +14,10 @@
     
     # Build Tools
     cmake
+    meson
+    ninja
+    ccache
+    clang
     pkg-config
     gnumake
     gcc

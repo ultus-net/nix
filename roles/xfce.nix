@@ -23,7 +23,9 @@
   };
 
   commonPackages.enable = true;
-  commonPackages.packages = [ pkgs.git pkgs.curl ];
+  # Thunar is Xfce's own file manager; the browser and the music client are
+  # desktop apps, so they live with the desktop rather than the shared set.
+  commonPackages.packages = [ pkgs.git pkgs.curl pkgs.thunar pkgs.chromium pkgs.spotify pkgs.zed-editor pkgs.opencode pkgs.discord ];
 
   xfce.enable = true;
   

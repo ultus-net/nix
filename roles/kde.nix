@@ -26,7 +26,7 @@
   };
 
   commonPackages.enable = true;
-  commonPackages.packages = [ pkgs.git pkgs.htop ];
+  commonPackages.packages = [ pkgs.git pkgs.htop pkgs.chromium pkgs.spotify pkgs.zed-editor pkgs.opencode pkgs.discord ];
 
   # PINCE debugger
 

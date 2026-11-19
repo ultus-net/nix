@@ -17,8 +17,10 @@
     ../../modules/security.nix
 
     # All optional feature modules
+    ../../modules/development.nix
     ../../modules/gaming.nix
     ../../modules/multimedia.nix
+    ../../modules/sysadmin.nix
     ../../modules/virtualization.nix
     ../../modules/containers.nix
     ../../modules/auto-upgrade.nix
@@ -123,6 +125,13 @@
   multimedia.enable = true;
   virtualization.enable = true;
   machines.containers.enable = true;
+
+  # Backup, network diagnostics and hardware monitoring. The module already
+  # carries the package lists, so this host does not repeat them.
+  sysadmin.enable = true;
+
+  # GPU fan curves and monitoring for the RTX 3070.
+  services.lact.enable = true;
 
   # Configuration deployment helper
   deployConfig.enable = true;
@@ -264,10 +273,10 @@
     iotop
     powertop
 
-    # Hardware utilities
-    pciutils
-    usbutils
-    lm_sensors
+    # GPU monitoring and overlays. nvitop reads NVML; nvtop does not exist in
+    # this nixpkgs.
+    nvitop
+    goverlay
 
     # RGB managers
     openrgb

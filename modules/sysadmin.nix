@@ -64,7 +64,7 @@ in {
       dnsutils         # dig, nslookup
       traceroute       # Network path tracing
       bandwhich        # Network bandwidth monitor
-      dogdns           # Better dig
+      doggo            # Better dig
       gping            # Ping with graph
       iperf3           # Network performance
       tcpdump          # Packet analyzer
