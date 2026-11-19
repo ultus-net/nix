@@ -64,9 +64,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `systemd-nspawn` session, and an allowlisting `CONNECT` proxy in front of its
   only egress. `documentation/AGENT-SANDBOX.md` states what it isolates and what
   it does not.
+- `modules/dux.nix` and `roles/dux.nix`: the Dux Shell desktop (the renamed
+  DankMaterialShell) on Hyprland via `programs.dux-shell`. `hosts/dux-vm/` is a
+  VM-only host that autologins to it, built with
+  `nix build .#nixosConfigurations.dux-vm.config.system.build.vm`.
+- `roles/noctalia.nix` and `modules/noctalia.nix`: the Noctalia desktop
+  (Umbriel compositor, Noctalia shell bound to `umbriel-session.target`, the
+  greetd-based `noctalia-greeter`) and `pkgs/luciole` packaged in-tree at a
+  pinned upstream commit and exported as `packages.<system>.luciole`.
+  `hosts/noctalia-vm/` is a VM-only preview that starts Umbriel straight from
+  greetd, built with
+  `nix build .#nixosConfigurations.noctalia-vm.config.system.build.vm`.
+- `tower` boots Noctalia, not KDE. Its `imports` now name
+  `roles/noctalia.nix`, and the KDE option block and the SDDM `kscreen`
+  tmpfiles rule are deleted from the host.
 
 ### Fixed
 
+- The `dux-vm` host test asserted `systemctl is-enabled sddm.service`, which
+  exits 4 because SDDM is reached through `display-manager.service` rather than
+  by its own unit name. It now asserts that alias exists.
+- The desktop preview VMs ask QEMU for a plain `virtio-vga` and render through
+  Mesa. Virgl aborted QEMU with `Couldn't find current GLX or EGL context` on a
+  host that gave it no GL context, so the preview died before the guest booted.
+  The GTK and SDL backends failed the same way. The device also sets
+  `xres=1920,yres=1080`, because QEMU's default 1280x800 mode is magnified by the
+  GTK console to fill the window.
 - `pince` comes from nixpkgs. The in-tree package pinned `v0.4.4`, a tag
   upstream has since dropped, so `nix build .#nixosConfigurations.tower`
   failed on a 404. The 260-line local patch set is deleted with it.

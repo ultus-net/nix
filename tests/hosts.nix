@@ -57,4 +57,34 @@ in
   work-laptop = mkHostTest "work-laptop" ../hosts/work-laptop/default.nix [ ] ''
     machine.succeed("systemctl is-enabled tlp.service")
   '';
+
+  # The preview host only has to prove its desktop wiring evaluates and
+  # installs: the Dux user unit and the display manager. SDDM is reached
+  # through display-manager.service, so that is the unit name to assert.
+  dux-vm = mkHostTest "dux-vm" ../hosts/dux-vm/default.nix [ ] ''
+    machine.succeed("test -f /etc/systemd/user/dms.service")
+    machine.succeed("test -e /etc/systemd/system/display-manager.service")
+  '';
+
+  # The preview host has to prove its desktop wiring installs and that the
+  # session starts without a greeter. A Wayland session cannot run in the test
+  # VM, so the greeter path is checked at evaluation time instead.
+  noctalia-vm = mkHostTest "noctalia-vm" ../hosts/noctalia-vm/default.nix [
+    ({ config, ... }: {
+      assertions = [
+        {
+          assertion = (config.services.greetd.settings.initial_session.user or null) == "noctalia";
+          message = "noctalia-vm must start the preview session from greetd's initial_session";
+        }
+        {
+          assertion = (config.services.greetd.settings.initial_session.command or null) == "${config.programs.umbriel.package}/bin/start-umbriel";
+          message = "noctalia-vm must start the Umbriel session, not another command";
+        }
+      ];
+    })
+  ] ''
+    machine.succeed("grep -q 'WantedBy=umbriel-session.target' /etc/systemd/user/noctalia.service")
+    machine.succeed("test -e /etc/systemd/system/display-manager.service")
+    machine.succeed("test -x /run/current-system/sw/bin/luciole")
+  '';
 }

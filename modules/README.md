@@ -32,6 +32,8 @@ is what `scripts/check-layering.py` enforces.
 | `kde.nix` | `kde` | nothing until enabled; composed by `roles/kde.nix` |
 | `xfce.nix` | `xfce` | nothing until enabled; composed by `roles/xfce.nix` |
 | `hyprland.nix` | `hyprland` | nothing until enabled; composed by `roles/hyprland.nix` |
+| `dux.nix` | `dux` | nothing until enabled; composed by `roles/dux.nix` |
+| `noctalia.nix` | `noctalia` | nothing until enabled; Umbriel, the shell, the greetd greeter and Luciole; composed by `roles/noctalia.nix` |
 
 ## Options worth knowing
 

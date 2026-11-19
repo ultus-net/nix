@@ -29,19 +29,33 @@ role is a build input.
 # hosts/tower/default.nix
 imports = [
   ./hardware.nix
-  ../../roles/kde.nix    # kde, hyprland, xfce, or base
+  ../../roles/noctalia.nix  # kde, dux, hyprland, xfce, noctalia, or base
 ];
 ```
 
 `scripts/switch-desktop.sh <desktop> [host]` rewrites that import line and
-rebuilds. The valid names are `kde`, `hyprland`, `xfce` and `base`.
+rebuilds. The valid names are `kde`, `dux`, `hyprland`, `xfce`, `noctalia` and
+`base`.
 
-Building one desktop to look at it, without changing what the host runs:
+The Dux Shell and Noctalia roles each have a VM-only host, for looking at the
+desktop without changing what a real machine runs:
 
 ```bash
-nix build .#nixosConfigurations.tower.config.system.build.vm
-./result/bin/run-nixos-vm
+nix build .#nixosConfigurations.dux-vm.config.system.build.vm
+./result/bin/run-dux-vm-vm
+
+nix build .#nixosConfigurations.noctalia-vm.config.system.build.vm
+./result/bin/run-noctalia-vm-vm
 ```
+
+Both VMs log in without a greeter: `dux-vm` through SDDM autologin, `noctalia-vm`
+through greetd's `initial_session`, because `services.displayManager.autoLogin`
+does not apply to greetd. The guest user matches the desktop name. Both ask
+QEMU for `virtio-vga,xres=1920,yres=1080` and render through Mesa's software
+path, because virgl aborts QEMU (`Couldn't find current GLX or EGL context`) on
+a host that gives it no GL context. The explicit mode matters: QEMU's default is
+1280x800, and the GTK console magnifies that to fill the window. A host with
+working GL can swap in `virtio-vga-gl` and `gtk,gl=on` for acceleration.
 
 `hosts/example/` is a skeleton host with the option groups commented out. It is
 there to be copied when a new machine joins; CI does not build it.

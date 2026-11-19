@@ -46,6 +46,9 @@
       # Toolchains the agent sessions need, without a second dependency source.
       packages = {
         dev-image = import ./containers/dev { inherit pkgs; };
+
+        # Not in nixpkgs. Pinned to an upstream commit in pkgs/luciole.
+        luciole = pkgs.callPackage ./pkgs/luciole { };
       };
 
       devShells.default = pkgs.mkShell {
@@ -142,6 +145,12 @@
 
         tower = mkSystem ./hosts/tower/default.nix;
         work-laptop = mkSystem ./hosts/work-laptop/default.nix;
+
+        # VM-only preview of the Dux Shell desktop. Not installed on hardware.
+        dux-vm = mkSystem ./hosts/dux-vm/default.nix;
+
+        # VM-only preview of the Noctalia desktop. Not installed on hardware.
+        noctalia-vm = mkSystem ./hosts/noctalia-vm/default.nix;
       };
 
       templates = {

@@ -27,10 +27,13 @@ enabled.
 | `agent-sandbox.nix` | `machines.agentSandbox.enable` | no |
 | `auto-upgrade.nix` | `machines.autoUpgrade.enable` | no |
 | `deploy-config.nix` | `deployConfig.enable` | no |
+| `dux.nix` | `dux.enable` | no |
+| `noctalia.nix` | `noctalia.enable` | no |
 
-The desktops are roles, not modules: `roles/kde.nix`, `roles/hyprland.nix`,
-`roles/xfce.nix`, `roles/base.nix`. `modules/kde.nix`, `modules/xfce.nix` and
-`modules/hyprland.nix` are what those roles compose.
+The desktops are roles, not modules: `roles/kde.nix`, `roles/noctalia.nix`,
+`roles/hyprland.nix`, `roles/xfce.nix`, `roles/dux.nix`, `roles/base.nix`.
+`modules/kde.nix`, `modules/noctalia.nix`, `modules/xfce.nix`,
+`modules/hyprland.nix` and `modules/dux.nix` are what those roles compose.
 
 ## Defaults every host inherits
 

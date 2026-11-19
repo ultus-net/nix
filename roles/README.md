@@ -8,7 +8,9 @@ that belong to that desktop. One role per output, imported by a host.
 | `kde.nix` | KDE Plasma 6 on Wayland, SDDM, the KDE app set, wallpapers |
 | `hyprland.nix` | Hyprland, Waybar, Wofi, Kitty, wallpapers |
 | `xfce.nix` | XFCE on X11, Thunar, wallpapers |
+| `dux.nix` | Dux Shell on Hyprland, SDDM, the Dux packages |
 | `base.nix` | headless: CLI set, security, NetworkManager, zram |
+| `noctalia.nix` | Noctalia shell on Umbriel, Luciole file manager, greetd greeter |
 
 `base-server` is built straight from `roles/base.nix` by `flake.nix`, so the
 headless composition keeps compiling without a host directory behind it.

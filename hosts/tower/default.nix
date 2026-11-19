@@ -6,8 +6,8 @@
     ../../modules/base.nix
     ./hardware.nix
 
-    # Desktop environment - Switched to KDE for stability
-    ../../roles/kde.nix
+    # Desktop environment - Switched to Noctalia for the noctalia desktop
+    ../../roles/noctalia.nix
 
     # Hardware modules
     ../../modules/nvidia.nix
@@ -132,21 +132,6 @@
     enable = true;
     flakePath = "/home/hunter/Documents/nix";
   };
-
-  # KDE Plasma 6 configuration
-  kde.enable = true;
-  kde.enableWayland = true;
-  kde.enableKDEConnectFirewall = true;
-  kde.enableBluetoothManager = true;
-  kde.disableBaloo = false;  # Keep indexing for better file search
-  kde.enableKWalletPAM = true;
-  kde.optimizeFonts = true;
-
-  # Fix SDDM display configuration to match user settings
-  # This copies the user's display configuration to SDDM so login screen matches desktop
-  systemd.tmpfiles.rules = [
-    "L+ /var/lib/sddm/.config/kscreen - - - - /home/hunter/.config/kscreen"
-  ];
 
   # Gamemode for automatic performance boosting in games
   programs.gamemode = {

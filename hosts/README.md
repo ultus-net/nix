@@ -5,8 +5,10 @@ and the role it picks.
 
 | Host | Role | Notes |
 | --- | --- | --- |
-| `tower/` | `kde.nix` | NVIDIA, gaming, multimedia, Docker, libvirt, PINCE, agent sandbox |
+| `tower/` | `noctalia.nix` | NVIDIA, gaming, multimedia, Docker, libvirt, PINCE, agent sandbox |
 | `work-laptop/` | `kde.nix` | TLP, fwupd, DisplayLink, agent sandbox |
+| `dux-vm/` | `dux.nix` | VM-only preview: SDDM autologin, software-rendered virtio GPU, no hardware |
+| `noctalia-vm/` | `noctalia.nix` | VM-only preview: greetd autostart, software-rendered virtio GPU, no hardware |
 | `example/` | `kde.nix` | skeleton, copied when a machine joins; not built by CI |
 
 `base-server` has no directory. It is `mkSystem ./roles/base.nix` in

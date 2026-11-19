@@ -7,7 +7,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 
-DESKTOPS=(kde xfce hyprland)
+DESKTOPS=(kde xfce hyprland dux noctalia)
 
 show_usage() {
   echo "Usage: $0 <desktop> [host]"
