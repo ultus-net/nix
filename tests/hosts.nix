@@ -65,9 +65,23 @@ in
     machine.succeed("systemctl is-enabled sddm.service")
   '';
 
-  # A Noctalia host proves the shell is bound to Umbriel's session target, the
-  # greetd greeter owns the tty, and Luciole built and installed.
-  noctalia-vm = mkHostTest "noctalia-vm" ../hosts/noctalia-vm/default.nix [ ] ''
+  # The preview host has to prove its desktop wiring installs and that the
+  # session starts without a greeter. A Wayland session cannot run in the test
+  # VM, so the greeter path is checked at evaluation time instead.
+  noctalia-vm = mkHostTest "noctalia-vm" ../hosts/noctalia-vm/default.nix [
+    ({ config, ... }: {
+      assertions = [
+        {
+          assertion = (config.services.greetd.settings.initial_session.user or null) == "noctalia";
+          message = "noctalia-vm must start the preview session from greetd's initial_session";
+        }
+        {
+          assertion = (config.services.greetd.settings.initial_session.command or null) == "${config.programs.umbriel.package}/bin/start-umbriel";
+          message = "noctalia-vm must start the Umbriel session, not another command";
+        }
+      ];
+    })
+  ] ''
     machine.succeed("grep -q 'WantedBy=umbriel-session.target' /etc/systemd/user/noctalia.service")
     machine.succeed("systemctl is-enabled greetd.service")
     machine.succeed("test -x /run/current-system/sw/bin/luciole")

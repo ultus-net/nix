@@ -8,14 +8,16 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    # Umbriel and the shell come from the nixpkgs modules, which also ship the
+    # session file, the user unit and the portal. Nothing here re-packages them.
     programs.umbriel.enable = true;
 
     programs.noctalia = {
       enable = true;
 
-      # Umbriel runs as a systemd user service and marks itself ready by
-      # starting umbriel-session.target. Binding Noctalia to that target is
-      # what orders the shell after the compositor and before autostart.
+      # The user service ships off by default and defaults its target to
+      # graphical-session.target. Umbriel starts umbriel-session.target, so
+      # enable the unit and bind it to the compositor's own target.
       systemd = {
         enable = true;
         target = "umbriel-session.target";
