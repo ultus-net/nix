@@ -21,13 +21,16 @@
     user = "noctalia";
   };
 
-  # QEMU: provide a virtio GPU with virgl so Umbriel/Noctalia can render.
+  # QEMU: virgl aborts on this host ("Couldn't find current GLX or EGL
+  # context"), so the guest gets a plain virtio GPU and renders through Mesa's
+  # software path instead of a host GL context. xres/yres set the preferred
+  # mode; QEMU defaults to 1280x800, which GTK then magnifies to fill the window.
   virtualisation.vmVariant = {
     virtualisation = {
       memorySize = 4096;
       cores = 4;
       diskSize = 4096;
-      qemu.options = [ "-vga" "none" "-device" "virtio-vga-gl" "-display" "gtk,gl=on" ];
+      qemu.options = [ "-vga" "none" "-device" "virtio-vga,xres=1920,yres=1080" "-display" "gtk" ];
     };
   };
 }

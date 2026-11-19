@@ -26,6 +26,8 @@ flake.json
 
 # nixos-rebuild / nix tooling can create these in some workflows
 nixos.qcow2
+# The preview VMs name their disk after the host
+*-vm.qcow2
 
 # SSH keys and age keys (never commit)
 *.key

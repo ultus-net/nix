@@ -22,14 +22,16 @@
     user = "dux";
   };
 
-  # QEMU has no GPU. A virtio GPU with virgl gives the guest a GL device, so
-  # Hyprland renders instead of failing to find a render node.
+  # QEMU has no GPU. A plain virtio GPU still gives the guest a DRM node, and
+  # Mesa renders through llvmpipe on it. Virgl needs a host GL context, and QEMU
+  # aborts without one, so the preview would never reach the desktop. xres/yres
+  # set the preferred mode, since QEMU defaults to 1280x800.
   virtualisation.vmVariant = {
     virtualisation = {
       memorySize = 4096;
       cores = 4;
       diskSize = 4096;
-      qemu.options = [ "-vga" "none" "-device" "virtio-vga-gl" "-display" "gtk,gl=on" ];
+      qemu.options = [ "-vga" "none" "-device" "virtio-vga,xres=1920,yres=1080" "-display" "gtk" ];
     };
   };
 }
