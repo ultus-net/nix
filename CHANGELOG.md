@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- Desktop applications moved out of the shared package set into the desktop
+  roles: `chromium`, `spotify`, `zed-editor`, `opencode` and `discord`, and
+  `thunar` on Xfce only. The headless role had installed a browser, a music
+  client and a file manager. The shared set uses `yq-go` rather than the Python
+  `yq`, matching the dev image.
 - Documentation is written for the owner, not for a contributor. `README.md` is
   the front page, and every page states what the tree does and why. Second-person
   tutorial tone, "getting started" framing and the contributor workflow are gone.
@@ -51,6 +56,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- `modules/wayland-utils.nix` (`waylandUtils.enable`): the wlroots session
+  baseline. `pwvucontrol`, `playerctl`, `brightnessctl`, `cliphist` with its
+  `wl-paste` watcher, `satty`, `wlr-randr` and `wf-recorder`. The noctalia, dux
+  and hyprland roles enable it.
+- The shared package set carries `nix-output-monitor`, `nvd` and `nix-tree`, and
+  the development toolchain adds `meson`, `ninja`, `ccache` and `clang`.
+  `tower` and `work-laptop` now import `development.nix`; no host did, so its
+  list was unreachable.
+- `tower` enables `sysadmin`, `services.lact` and adds `nvitop` and `goverlay`.
+  The home profile adds `zathura`, `pandoc`, `libreoffice`, `thunderbird`,
+  `signal-desktop` and `keepassxc`, and `security.nix` adds `sops`, `sbctl` and
+  `yubikey-manager`.
 - `dev-image` flake output and `containers/dev`: an OCI toolchain image with
   Node, Python, Go, and agent CLIs, built from the flake's nixpkgs. CI publishes
   it to `ghcr.io/ultus-net/nix-dev`.
@@ -84,6 +101,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The `dux-vm` host test asserted `systemctl is-enabled sddm.service`, which
   exits 4 because SDDM is reached through `display-manager.service` rather than
   by its own unit name. It now asserts that alias exists.
+- `modules/sysadmin.nix` did not evaluate: it listed `dogdns`, which nixpkgs
+  removed in favour of `doggo`. No host had enabled the module, so the break was
+  invisible until `tower` turned it on.
 - The desktop preview VMs ask QEMU for a plain `virtio-vga` and render through
   Mesa. Virgl aborted QEMU with `Couldn't find current GLX or EGL context` on a
   host that gave it no GL context, so the preview died before the guest booted.
