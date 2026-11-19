@@ -21,10 +21,8 @@
     user = "noctalia";
   };
 
-  # QEMU: virgl aborts on this host ("Couldn't find current GLX or EGL
-  # context"), so the guest gets a plain virtio GPU and renders through Mesa's
-  # software path instead of a host GL context. xres/yres set the preferred
-  # mode; QEMU defaults to 1280x800, which GTK then magnifies to fill the window.
+  # QEMU: virgl aborts without a host GL context, so render through Mesa's
+  # software path at 1920x1080. USAGE.md has the full reasoning and the opt-in.
   virtualisation.vmVariant = {
     virtualisation = {
       memorySize = 4096;

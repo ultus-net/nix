@@ -51,10 +51,11 @@ nix build .#nixosConfigurations.noctalia-vm.config.system.build.vm
 Both VMs log in without a greeter: `dux-vm` through SDDM autologin, `noctalia-vm`
 through greetd's `initial_session`, because `services.displayManager.autoLogin`
 does not apply to greetd. The guest user matches the desktop name. Both ask
-QEMU for a plain `virtio-vga` and render through Mesa's software path, because
-virgl aborts QEMU (`Couldn't find current GLX or EGL context`) on a host that
-gives it no GL context. A host with working GL can swap in `virtio-vga-gl` and
-`gtk,gl=on` for acceleration.
+QEMU for `virtio-vga,xres=1920,yres=1080` and render through Mesa's software
+path, because virgl aborts QEMU (`Couldn't find current GLX or EGL context`) on
+a host that gives it no GL context. The explicit mode matters: QEMU's default is
+1280x800, and the GTK console magnifies that to fill the window. A host with
+working GL can swap in `virtio-vga-gl` and `gtk,gl=on` for acceleration.
 
 `hosts/example/` is a skeleton host with the option groups commented out. It is
 there to be copied when a new machine joins; CI does not build it.

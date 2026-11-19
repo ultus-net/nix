@@ -84,7 +84,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The desktop preview VMs ask QEMU for a plain `virtio-vga` and render through
   Mesa. Virgl aborted QEMU with `Couldn't find current GLX or EGL context` on a
   host that gave it no GL context, so the preview died before the guest booted.
-  The GTK and SDL backends failed the same way.
+  The GTK and SDL backends failed the same way. The device also sets
+  `xres=1920,yres=1080`, because QEMU's default 1280x800 mode is magnified by the
+  GTK console to fill the window.
 - `pince` comes from nixpkgs. The in-tree package pinned `v0.4.4`, a tag
   upstream has since dropped, so `nix build .#nixosConfigurations.tower`
   failed on a 404. The 260-line local patch set is deleted with it.

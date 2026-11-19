@@ -22,10 +22,8 @@
     user = "dux";
   };
 
-  # QEMU has no GPU. A plain virtio GPU still gives the guest a DRM node, and
-  # Mesa renders through llvmpipe on it. Virgl needs a host GL context, and QEMU
-  # aborts without one, so the preview would never reach the desktop. xres/yres
-  # set the preferred mode, since QEMU defaults to 1280x800.
+  # QEMU: virgl aborts without a host GL context, so render through Mesa's
+  # software path at 1920x1080. USAGE.md has the full reasoning and the opt-in.
   virtualisation.vmVariant = {
     virtualisation = {
       memorySize = 4096;
