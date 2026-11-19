@@ -32,6 +32,7 @@ is what `scripts/check-layering.py` enforces.
 | `kde.nix` | `kde` | nothing until enabled; composed by `roles/kde.nix` |
 | `xfce.nix` | `xfce` | nothing until enabled; composed by `roles/xfce.nix` |
 | `hyprland.nix` | `hyprland` | nothing until enabled; composed by `roles/hyprland.nix` |
+| `dux.nix` | `dux` | nothing until enabled; composed by `roles/dux.nix` |
 
 ## Options worth knowing
 

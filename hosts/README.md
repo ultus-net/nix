@@ -7,6 +7,7 @@ and the role it picks.
 | --- | --- | --- |
 | `tower/` | `kde.nix` | NVIDIA, gaming, multimedia, Docker, libvirt, PINCE, agent sandbox |
 | `work-laptop/` | `kde.nix` | TLP, fwupd, DisplayLink, agent sandbox |
+| `dux-vm/` | `dux.nix` | VM-only preview: autologin, virgl display, no hardware |
 | `example/` | `kde.nix` | skeleton, copied when a machine joins; not built by CI |
 
 `base-server` has no directory. It is `mkSystem ./roles/base.nix` in

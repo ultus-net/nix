@@ -29,19 +29,24 @@ role is a build input.
 # hosts/tower/default.nix
 imports = [
   ./hardware.nix
-  ../../roles/kde.nix    # kde, hyprland, xfce, or base
+  ../../roles/kde.nix    # kde, dux, hyprland, xfce, or base
 ];
 ```
 
 `scripts/switch-desktop.sh <desktop> [host]` rewrites that import line and
-rebuilds. The valid names are `kde`, `hyprland`, `xfce` and `base`.
+rebuilds. The valid names are `kde`, `dux`, `hyprland`, `xfce` and `base`.
 
-Building one desktop to look at it, without changing what the host runs:
+The Dux Shell role has a VM-only host, `hosts/dux-vm/`, for looking at the
+desktop without changing what a real machine runs:
 
 ```bash
-nix build .#nixosConfigurations.tower.config.system.build.vm
-./result/bin/run-nixos-vm
+nix build .#nixosConfigurations.dux-vm.config.system.build.vm
+./result/bin/run-dux-vm-vm
 ```
+
+The VM autologins as `dux` and asks QEMU for a virgl display. If the window is
+black, the host gave QEMU no GL context; change `gtk,gl=on` to `sdl,gl=on` in
+`hosts/dux-vm/default.nix`.
 
 `hosts/example/` is a skeleton host with the option groups commented out. It is
 there to be copied when a new machine joins; CI does not build it.

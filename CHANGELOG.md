@@ -64,6 +64,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `systemd-nspawn` session, and an allowlisting `CONNECT` proxy in front of its
   only egress. `documentation/AGENT-SANDBOX.md` states what it isolates and what
   it does not.
+- `modules/dux.nix` and `roles/dux.nix`: the Dux Shell desktop (the renamed
+  DankMaterialShell) on Hyprland via `programs.dux-shell`. `hosts/dux-vm/` is a
+  VM-only host that autologins to it, built with
+  `nix build .#nixosConfigurations.dux-vm.config.system.build.vm`.
 
 ### Fixed
 

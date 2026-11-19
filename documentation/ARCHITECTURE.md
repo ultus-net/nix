@@ -11,6 +11,7 @@ nix/
 ├── hosts/                 # one directory per machine
 │   ├── tower/             # default.nix + hardware.nix
 │   ├── work-laptop/
+│   ├── dux-vm/            # VM-only preview of roles/dux.nix
 │   └── example/           # skeleton, copied when a machine joins
 ├── roles/                 # desktop and server compositions
 ├── modules/               # host-agnostic pieces, each guarded by an option
@@ -86,7 +87,7 @@ Top level:
 
 | Output | What |
 | --- | --- |
-| `nixosConfigurations` | `base-server`, `tower`, `work-laptop` |
+| `nixosConfigurations` | `base-server`, `tower`, `work-laptop`, `dux-vm` |
 | `homeConfigurations."hunter@x86_64-linux"` | the standalone HM profile |
 | `templates.homeManager` | a starting point for another HM config |
 
@@ -119,7 +120,7 @@ One namespace per concern, so an option reads as where it comes from.
 | `machines.zram` | `zram.nix` |
 | `commonPackages` | `common-packages.nix` |
 | `gaming` | `gaming.nix` |
-| `kde`, `xfce`, `hyprland` | the desktop modules |
+| `kde`, `xfce`, `hyprland`, `dux` | the desktop modules |
 | `multimedia`, `sysadmin`, `virtualization`, `pince`, `deployConfig` | same-named modules |
 
 A module with no option applies its defaults on import: `base.nix`,

@@ -20,9 +20,9 @@ its own source.
 
 ### `switch-desktop.sh <desktop> [host]`
 
-Rewrites the host's role import and rebuilds. Valid names are `kde`, `hyprland`,
-`xfce` and `base`. The host defaults to `hostname -s`, so the bare form works on
-the machine it targets. It shows the diff and asks before writing.
+Rewrites the host's role import and rebuilds. Valid names are `kde`, `dux`,
+`hyprland`, `xfce` and `base`. The host defaults to `hostname -s`, so the bare
+form works on the machine it targets. It shows the diff and asks before writing.
 
 ### `switch-host.sh [<flake-ref>]`
 

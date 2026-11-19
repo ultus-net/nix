@@ -142,6 +142,9 @@
 
         tower = mkSystem ./hosts/tower/default.nix;
         work-laptop = mkSystem ./hosts/work-laptop/default.nix;
+
+        # VM-only preview of the Dux Shell desktop. Not installed on hardware.
+        dux-vm = mkSystem ./hosts/dux-vm/default.nix;
       };
 
       templates = {

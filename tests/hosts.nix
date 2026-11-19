@@ -57,4 +57,11 @@ in
   work-laptop = mkHostTest "work-laptop" ../hosts/work-laptop/default.nix [ ] ''
     machine.succeed("systemctl is-enabled tlp.service")
   '';
+
+  # The preview host only has to prove its desktop wiring evaluates and
+  # installs: the Dux user unit and the display manager.
+  dux-vm = mkHostTest "dux-vm" ../hosts/dux-vm/default.nix [ ] ''
+    machine.succeed("test -f /etc/systemd/user/dms.service")
+    machine.succeed("systemctl is-enabled sddm.service")
+  '';
 }
