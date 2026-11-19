@@ -4,7 +4,7 @@ let
 in
 {
   options.noctalia = {
-    enable = lib.mkEnableOption "the Noctalia desktop role (Umbriel + Noctalia shell)";
+    enable = lib.mkEnableOption "the Noctalia desktop: Umbriel, the Noctalia shell, Luciole and the greeter";
   };
 
   config = lib.mkIf cfg.enable {
@@ -12,20 +12,22 @@ in
 
     programs.noctalia = {
       enable = true;
-      # Bind the user service to the graphical-session.target by default
-      systemd.target = "graphical-session.target";
+
+      # Umbriel runs as a systemd user service and marks itself ready by
+      # starting umbriel-session.target. Binding Noctalia to that target is
+      # what orders the shell after the compositor and before autostart.
+      systemd = {
+        enable = true;
+        target = "umbriel-session.target";
+      };
+
+      recommendedServices.enable = true;
     };
 
-    # Use the Noctalia greeter (greetd-based) rather than SDDM
+    # The Noctalia greeter is greetd-based, so it replaces SDDM entirely.
     services.displayManager.noctalia-greeter.enable = true;
 
-    # Install Luciole from the in-tree package
-    environment.systemPackages = with pkgs; [ (import ../pkgs/luciole { inherit pkgs; }) ];
-
-    # Ensure commonly-needed services are present for a desktop session
-    networking.networkmanager.enable = lib.mkDefault true;
-    hardware.bluetooth.enable = lib.mkDefault true;
-    services.upower.enable = lib.mkDefault true;
-    services.power-profiles-daemon.enable = lib.mkDefault true;
+    # Luciole is not in nixpkgs, so the role ships it from pkgs/.
+    environment.systemPackages = [ (pkgs.callPackage ../pkgs/luciole { }) ];
   };
 }

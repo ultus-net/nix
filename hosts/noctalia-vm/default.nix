@@ -13,9 +13,11 @@
   };
   users.groups.noctalia = { };
 
-  # Skip the normal greeter for the preview VM; autologin the preview user.
-  services.displayManager.autoLogin = {
-    enable = true;
+  # The preview VM skips the greeter. `services.displayManager.autoLogin` only
+  # drives SDDM and GDM, and this role logs in through greetd, so the session
+  # starts from greetd's initial_session instead.
+  services.greetd.settings.initial_session = {
+    command = "${config.programs.umbriel.package}/bin/start-umbriel";
     user = "noctalia";
   };
 

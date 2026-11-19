@@ -65,8 +65,11 @@ in
     machine.succeed("systemctl is-enabled sddm.service")
   '';
 
+  # A Noctalia host proves the shell is bound to Umbriel's session target, the
+  # greetd greeter owns the tty, and Luciole built and installed.
   noctalia-vm = mkHostTest "noctalia-vm" ../hosts/noctalia-vm/default.nix [ ] ''
-    machine.succeed("test -f /etc/systemd/user/noctalia.service")
+    machine.succeed("grep -q 'WantedBy=umbriel-session.target' /etc/systemd/user/noctalia.service")
     machine.succeed("systemctl is-enabled greetd.service")
+    machine.succeed("test -x /run/current-system/sw/bin/luciole")
   '';
 }

@@ -8,7 +8,6 @@
 
     # Desktop environment - Switched to Noctalia for the noctalia desktop
     ../../roles/noctalia.nix
-    ../../modules/kde.nix
 
     # Hardware modules
     ../../modules/nvidia.nix
@@ -133,23 +132,6 @@
     enable = true;
     flakePath = "/home/hunter/Documents/nix";
   };
-
-  # KDE Plasma 6 configuration (preserved settings but not enabled by default
-  # when the role is Noctalia). The role controls whether KDE is active on a
-  # machine.
-  kde.enable = lib.mkDefault false;
-  kde.enableWayland = lib.mkDefault true;
-  kde.enableKDEConnectFirewall = lib.mkDefault true;
-  kde.enableBluetoothManager = lib.mkDefault true;
-  kde.disableBaloo = lib.mkDefault false;  # Keep indexing for better file search
-  kde.enableKWalletPAM = lib.mkDefault true;
-  kde.optimizeFonts = lib.mkDefault true;
-
-  # Fix SDDM display configuration to match user settings
-  # This copies the user's display configuration to SDDM so login screen matches desktop
-  systemd.tmpfiles.rules = [
-    "L+ /var/lib/sddm/.config/kscreen - - - - /home/hunter/.config/kscreen"
-  ];
 
   # Gamemode for automatic performance boosting in games
   programs.gamemode = {

@@ -68,12 +68,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   DankMaterialShell) on Hyprland via `programs.dux-shell`. `hosts/dux-vm/` is a
   VM-only host that autologins to it, built with
   `nix build .#nixosConfigurations.dux-vm.config.system.build.vm`.
-
-- `roles/noctalia.nix` and `modules/noctalia.nix`: the Noctalia desktop role
-  (Umbriel compositor, Noctalia shell), `services.displayManager.noctalia-greeter`
-  (greetd-based greeter) and `pkgs/luciole` packaged in-tree at a pinned
-  upstream commit. `hosts/noctalia-vm/` is a VM-only preview that autologins the
-  `noctalia` user.
+- `roles/noctalia.nix` and `modules/noctalia.nix`: the Noctalia desktop
+  (Umbriel compositor, Noctalia shell bound to `umbriel-session.target`, the
+  greetd-based `noctalia-greeter`) and `pkgs/luciole` packaged in-tree at a
+  pinned upstream commit and exported as `packages.<system>.luciole`.
+  `hosts/noctalia-vm/` is a VM-only preview that starts Umbriel straight from
+  greetd, built with
+  `nix build .#nixosConfigurations.noctalia-vm.config.system.build.vm`.
+- `tower` boots Noctalia, not KDE. Its `imports` now name
+  `roles/noctalia.nix`, and the KDE option block and the SDDM `kscreen`
+  tmpfiles rule are deleted from the host.
 
 ### Fixed
 

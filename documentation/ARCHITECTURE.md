@@ -12,10 +12,11 @@ nix/
 │   ├── tower/             # default.nix + hardware.nix
 │   ├── work-laptop/
 │   ├── dux-vm/            # VM-only preview of roles/dux.nix
+│   ├── noctalia-vm/       # VM-only preview of roles/noctalia.nix
 │   └── example/           # skeleton, copied when a machine joins
-├── roles/                 # desktop and server compositions
+├── roles/                 # desktop compositions
 ├── modules/               # host-agnostic pieces, each guarded by an option
-├── pkgs/                  # sources a module installs (agent-sandbox)
+├── pkgs/                  # sources a module installs (agent-sandbox, luciole)
 ├── home/                  # Home Manager profiles
 ├── lib/forAllSystems.nix  # per-system output helper, replaces flake-utils
 ├── tests/hosts.nix        # one nixosTest per host
@@ -105,7 +106,9 @@ module with QEMU's root disk and without the NVIDIA GPU, waits for
 `multi-user.target`, and asserts `sshd`, an active `firewall.service`, and one
 service that host actually enables. `work-laptop` asserts `tlp.service`, not
 `fwupd.service`: fwupd is `linked` there, never `enabled`, so `is-enabled` exits
-non-zero on a correct system.
+non-zero on a correct system. The two VM previews assert their desktop wiring:
+`dux-vm` the DMS user unit and SDDM, `noctalia-vm` the Noctalia unit's
+`WantedBy=umbriel-session.target`, greetd, and the installed `luciole`.
 
 ## Module namespaces
 
@@ -120,7 +123,7 @@ One namespace per concern, so an option reads as where it comes from.
 | `machines.zram` | `zram.nix` |
 | `commonPackages` | `common-packages.nix` |
 | `gaming` | `gaming.nix` |
-| `kde`, `xfce`, `hyprland`, `dux` | the desktop modules |
+| `kde`, `xfce`, `hyprland`, `dux`, `noctalia` | the desktop modules |
 | `multimedia`, `sysadmin`, `virtualization`, `pince`, `deployConfig` | same-named modules |
 
 A module with no option applies its defaults on import: `base.nix`,

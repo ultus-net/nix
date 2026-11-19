@@ -9,13 +9,14 @@ machine needs it.
 
 | Host | Desktop | What it is |
 | --- | --- | --- |
-| `tower` | KDE | Home workstation. NVIDIA, the games drive, Docker, libvirt, PINCE. |
+| `tower` | Noctalia | Home workstation. NVIDIA, the games drive, Docker, libvirt, PINCE. |
 | `work-laptop` | KDE | Laptop. TLP, fwupd, DisplayLink, the work toolchain. |
 | `base-server` | none | Headless. A role-only output, so it cannot rot unnoticed. |
 
-`nixosConfigurations` carries all three. `homeConfigurations."hunter@x86_64-linux"`
-is the Home Manager profile, and `dev-image` is the toolchain container published
-to `ghcr.io/ultus-net/nix-dev`.
+`nixosConfigurations` carries all three, plus the `dux-vm` and `noctalia-vm`
+preview VMs. `homeConfigurations."hunter@x86_64-linux"` is the Home Manager
+profile, and `dev-image` is the toolchain container published to
+`ghcr.io/ultus-net/nix-dev`.
 
 ## Layout
 
@@ -23,7 +24,7 @@ to `ghcr.io/ultus-net/nix-dev`.
 nix/
 ├── flake.nix               # inputs, outputs, checks
 ├── hosts/                  # one directory per machine: hardware + identity + role choice
-├── roles/                  # desktop and server compositions (kde, hyprland, xfce, base)
+├── roles/                  # desktop compositions (kde, noctalia, hyprland, xfce, dux, base)
 ├── modules/                # host-agnostic pieces, each guarded by an option
 ├── pkgs/                   # sources a module installs (agent-sandbox, others)
 ├── home/                   # Home Manager profiles

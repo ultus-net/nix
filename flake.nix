@@ -46,6 +46,9 @@
       # Toolchains the agent sessions need, without a second dependency source.
       packages = {
         dev-image = import ./containers/dev { inherit pkgs; };
+
+        # Not in nixpkgs. Pinned to an upstream commit in pkgs/luciole.
+        luciole = pkgs.callPackage ./pkgs/luciole { };
       };
 
       devShells.default = pkgs.mkShell {
