@@ -81,6 +81,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- The `dux-vm` host test asserted `systemctl is-enabled sddm.service`, which
+  exits 4 because SDDM is reached through `display-manager.service` rather than
+  by its own unit name. It now asserts that alias exists.
 - The desktop preview VMs ask QEMU for a plain `virtio-vga` and render through
   Mesa. Virgl aborted QEMU with `Couldn't find current GLX or EGL context` on a
   host that gave it no GL context, so the preview died before the guest booted.

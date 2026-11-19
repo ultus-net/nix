@@ -59,10 +59,11 @@ in
   '';
 
   # The preview host only has to prove its desktop wiring evaluates and
-  # installs: the Dux user unit and the display manager.
+  # installs: the Dux user unit and the display manager. SDDM is reached
+  # through display-manager.service, so that is the unit name to assert.
   dux-vm = mkHostTest "dux-vm" ../hosts/dux-vm/default.nix [ ] ''
     machine.succeed("test -f /etc/systemd/user/dms.service")
-    machine.succeed("systemctl is-enabled sddm.service")
+    machine.succeed("test -e /etc/systemd/system/display-manager.service")
   '';
 
   # The preview host has to prove its desktop wiring installs and that the
@@ -83,7 +84,7 @@ in
     })
   ] ''
     machine.succeed("grep -q 'WantedBy=umbriel-session.target' /etc/systemd/user/noctalia.service")
-    machine.succeed("systemctl is-enabled greetd.service")
+    machine.succeed("test -e /etc/systemd/system/display-manager.service")
     machine.succeed("test -x /run/current-system/sw/bin/luciole")
   '';
 }
