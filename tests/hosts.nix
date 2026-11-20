@@ -36,9 +36,17 @@ let
     };
 in
 {
+  # The console is on for every headless host. The test proves the socket is
+  # up and that cockpit-ws serves its own login page on loopback, which a
+  # generic error page cannot fake. The firewall keeps 9090 closed, so the port
+  # is deliberately not opened.
   base-server = mkHostTest "base-server" ../roles/base.nix
     [ ({ lib, ... }: { networking.hostName = lib.mkForce "machine"; }) ]
-    "";
+    ''
+      machine.wait_for_unit("cockpit.socket")
+      machine.succeed("curl -kfsSL https://localhost:9090/ | grep -q 'cockpit/static/login.js'")
+      machine.succeed("curl -kfsSLo /dev/null -w '%{http_code}' https://localhost:9090/cockpit/static/login.js | grep -qx 200")
+    '';
 
   # QEMU has no NVIDIA GPU, so the host runs on modesetting there.
   tower = mkHostTest "tower" ../hosts/tower/default.nix

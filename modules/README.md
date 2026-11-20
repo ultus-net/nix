@@ -23,6 +23,7 @@ is what `scripts/check-layering.py` enforces.
 | `containers.nix` | `machines.containers` | nothing until enabled |
 | `virtualization.nix` | `virtualization` | nothing until enabled |
 | `sysadmin.nix` | `sysadmin` | nothing until enabled |
+| `cockpit.nix` | `cockpit` | nothing until enabled; web console on 9090, firewall closed so access is through an SSH tunnel |
 | `nix-index.nix` | `nixIndex` | nothing until enabled; `nix-locate` plus a daily staleness probe that rebuilds the index weekly |
 | `wayland-utils.nix` | `waylandUtils` | nothing until enabled; mixer, media keys, clipboard history, screenshot annotation |
 | `pince.nix` | `pince` | nothing until enabled |

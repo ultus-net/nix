@@ -19,6 +19,7 @@
     ../modules/networking.nix      # Network management
     ../modules/zram.nix            # Compressed swap (useful on all systems)
     ../modules/home-manager.nix    # Optional: Home Manager integration
+    ../modules/cockpit.nix         # Web console, reachable through an SSH tunnel
   ];
 
   # CRITICAL: Placeholder filesystem configuration for flake evaluation.
@@ -45,6 +46,11 @@
   ];
 
   # Enable PINCE (built from source package)
+
+  # The web console is on for every headless host, so the server profile has a
+  # browser way in. It binds 9090 with the firewall closed; see the module for
+  # the tunnel, and set a password on the admin account or nobody can sign in.
+  cockpit.enable = lib.mkDefault true;
 
   # Security hardening is applied via modules/security.nix import above
   # (firewall, SSH agent, avahi, etc.)

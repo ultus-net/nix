@@ -21,6 +21,7 @@ enabled.
 | `containers.nix` | `machines.containers.enable` | no |
 | `virtualization.nix` | `virtualization.enable` | no |
 | `sysadmin.nix` | `sysadmin.enable` | no |
+| `cockpit.nix` | `cockpit.enable` | no |
 | `nix-index.nix` | `nixIndex.enable` | no |
 | `wayland-utils.nix` | `waylandUtils.enable` | no |
 | `nvidia.nix` | none | yes |
