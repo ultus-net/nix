@@ -100,6 +100,7 @@ Top level:
 | `layering` | no role or module names a path under `hosts/`, and `--self-test` shows the checker still fails a planted violation |
 | `no-initial-password` | no `initialHashedPassword` outside `hosts/example/` |
 | `agent-sandbox-proxy` | the proxy's allowlist, address filter and dialer |
+| `work-laptop-boot` | the work-laptop loader choice and EFI install target match the ESP the host declares, which the QEMU host test cannot see |
 | `<host>` (per host) | the real host module reaches `multi-user.target` in QEMU |
 
 The host tests come from `tests/hosts.nix`. Each one builds from the real host
