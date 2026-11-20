@@ -108,7 +108,9 @@ service that host actually enables. `work-laptop` asserts `tlp.service`, not
 `fwupd.service`: fwupd is `linked` there, never `enabled`, so `is-enabled` exits
 non-zero on a correct system. The two VM previews assert their desktop wiring:
 `dux-vm` the DMS user unit and SDDM, `noctalia-vm` the Noctalia unit's
-`WantedBy=umbriel-session.target`, greetd, and the installed `luciole`.
+`WantedBy=umbriel-session.target`, greetd, and the installed `luciole`. Those
+tests prove wiring, not a live session: the test VM has no DRM device and no
+GL, so the compositor starts only on real hardware or under the preview GPU.
 
 ## Module namespaces
 
