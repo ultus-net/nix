@@ -47,10 +47,9 @@
 
   # Enable PINCE (built from source package)
 
-  # The web console is on for every headless host. The firewall stays closed,
-  # so the way in is `ssh -L 9090:localhost:9090` and then
-  # https://localhost:9090. A host that wants LAN access sets
-  # `services.cockpit.openFirewall = true` itself.
+  # The web console is on for every headless host, so the server profile has a
+  # browser way in. It binds 9090 with the firewall closed; see the module for
+  # the tunnel, and set a password on the admin account or nobody can sign in.
   cockpit.enable = lib.mkDefault true;
 
   # Security hardening is applied via modules/security.nix import above
