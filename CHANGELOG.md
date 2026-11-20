@@ -63,8 +63,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   over HTTPS. Every headless host gets it through `roles/base.nix`, and the
   firewall stays closed, so access is `ssh -L 9090:localhost:9090`. Plugins are
   per host through `cockpit.plugins`. Sign-in goes through PAM, so the admin
-  account needs a password, and a warning fires when no normal account has one.
-  Multi-host login and plain HTTP are pinned off.
+  account needs a password, and a warning fires when the host has no normal
+  account at all. Multi-host login and plain HTTP are pinned off.
 - `modules/wayland-utils.nix` (`waylandUtils.enable`): the wlroots session
   baseline. `pwvucontrol`, `playerctl`, `brightnessctl`, `cliphist` with its
   `wl-paste` watcher, `satty`, `wlr-randr` and `wf-recorder`. The noctalia, dux

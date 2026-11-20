@@ -2,14 +2,8 @@
 let
   cfg = config.cockpit;
 
-  # Cockpit signs in through PAM, so an account without a password cannot
-  # authenticate. Only normal users count: the system accounts have no shell.
-  hasPassword = user:
-    (user.hashedPassword or null) != null
-    || (user.hashedPasswordFile or null) != null
-    || (user.password or "") != ""
-    || (user.initialPassword or null) != null;
-
+  # Cockpit signs in through PAM, so the host needs at least one account that
+  # can authenticate. System accounts have no shell and cannot.
   normalUsers = lib.filter (user: user.isNormalUser) (lib.attrValues config.users.users);
 in
 {
@@ -44,10 +38,12 @@ in
       };
     };
 
-    warnings = lib.optional (lib.all (user: !(hasPassword user)) normalUsers) ''
-      cockpit.enable is on, but no normal account has a password. Cockpit
-      authenticates through PAM, so nobody can sign in. Set
-      `hashedPasswordFile` on the admin account, or turn cockpit off here.
+    # A host can grant a password imperatively with `passwd`, so the config
+    # cannot know whether one is set. It can know that nobody exists to sign in.
+    warnings = lib.optional (normalUsers == [ ]) ''
+      cockpit.enable is on, but this host has no normal account. Cockpit
+      authenticates through PAM, so there is nobody to sign in as. Add the
+      admin account, or turn cockpit off here.
     '';
   };
 }
