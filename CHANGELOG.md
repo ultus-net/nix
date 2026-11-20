@@ -59,6 +59,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- `modules/cockpit.nix` (`cockpit.enable`): the Cockpit web console on port 9090
+  over HTTPS. Every headless host gets it through `roles/base.nix`, and the
+  firewall stays closed, so access is `ssh -L 9090:localhost:9090`. Plugins are
+  per host through `cockpit.plugins`.
 - `modules/wayland-utils.nix` (`waylandUtils.enable`): the wlroots session
   baseline. `pwvucontrol`, `playerctl`, `brightnessctl`, `cliphist` with its
   `wl-paste` watcher, `satty`, `wlr-randr` and `wf-recorder`. The noctalia, dux

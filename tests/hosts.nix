@@ -36,9 +36,16 @@ let
     };
 in
 {
+  # The console is on for every headless host. The test proves the socket is
+  # listening and the console answers on loopback. The firewall keeps 9090
+  # closed, so it is not reachable from the network and the test does not open
+  # the port.
   base-server = mkHostTest "base-server" ../roles/base.nix
     [ ({ lib, ... }: { networking.hostName = lib.mkForce "machine"; }) ]
-    "";
+    ''
+      machine.wait_for_unit("cockpit.socket")
+      machine.succeed("curl -kfsSL https://localhost:9090/ | grep -qi cockpit")
+    '';
 
   # QEMU has no NVIDIA GPU, so the host runs on modesetting there.
   tower = mkHostTest "tower" ../hosts/tower/default.nix
