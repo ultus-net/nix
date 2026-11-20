@@ -84,8 +84,9 @@ in {
       pciutils         # lspci and PCI tools
     ] ++ cfg.extraPackages;
     
-    # Wireshark needs its setcap wrapper and the capture group. The raw package
-    # alone cannot capture as an unprivileged user.
+    # Wireshark needs its setcap wrapper. The module creates the `wireshark`
+    # group and the wrapper, but a module cannot name a user, so each host that
+    # enables this adds its account to `wireshark` (tower does).
     programs.wireshark = lib.mkIf cfg.enableNetworkDiagnostics {
       enable = true;
     };

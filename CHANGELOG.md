@@ -112,7 +112,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   by its own unit name. It now asserts that alias exists.
 - The `cliphist` watcher was bound to `graphical-session.target`, which neither
   Umbriel nor Hyprland starts. It now binds to `waylandUtils.sessionTarget`, and
-  the noctalia, dux and hyprland roles set the real target.
+  the noctalia, dux and hyprland roles set the real target. It also restarts on
+  failure, because a dead watcher stops clipboard history for the session.
 - `gaming.nix` filtered its package list by attribute presence, which hid four
   entries nixpkgs had dropped (`latencyflex`, `libFAudio`, `obs_vkcapture`,
   `mangohud-profiles`) and made `enableI386Compat` a no-op because

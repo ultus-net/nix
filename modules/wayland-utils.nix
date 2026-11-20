@@ -29,12 +29,17 @@ in
     ];
 
     # cliphist only stores entries, so a wl-paste watcher has to feed it. A
-    # watcher bound to the wrong target never starts.
+    # watcher bound to the wrong target never starts, and one that dies leaves
+    # clipboard history silently off for the rest of the session.
     systemd.user.services.cliphist = {
       description = "Clipboard history watcher for cliphist";
       wantedBy = [ cfg.sessionTarget ];
       partOf = [ cfg.sessionTarget ];
-      serviceConfig.ExecStart = "${pkgs.wl-clipboard}/bin/wl-paste --watch ${pkgs.cliphist}/bin/cliphist store";
+      serviceConfig = {
+        ExecStart = "${pkgs.wl-clipboard}/bin/wl-paste --watch ${pkgs.cliphist}/bin/cliphist store";
+        Restart = "on-failure";
+        RestartSec = 2;
+      };
     };
   };
 }
