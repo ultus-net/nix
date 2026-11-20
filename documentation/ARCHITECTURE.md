@@ -114,10 +114,14 @@ non-zero on a correct system. `elitedesk-800-g4` goes past the unit: it checks
 the Docker socket symlink exists, and that `podman info` and `docker info`
 answer behind it, so a running socket with a dead runtime fails. The VM previews
 assert their desktop wiring: `dux-vm` the DMS user unit and SDDM, `hyprland-vm`
-the Lua config in `/etc/xdg/hypr` and SDDM, `noctalia-vm` the Noctalia unit's
-`WantedBy=umbriel-session.target`, greetd, and the installed `luciole`. Those
-tests prove wiring, not a live session: the test VM has no DRM device and no
-GL, so the compositor starts only on real hardware or under the preview GPU.
+SDDM plus a `luac -p` parse of every installed Lua module, `noctalia-vm` the
+Noctalia unit's `WantedBy=umbriel-session.target`, greetd, and the installed
+`luciole`. `hyprland-vm` stops at the parse: the test VM has bochs DRM and no
+GPU-backed GL, so the compositor exits after SDDM selects the session. The live
+desktop is checked in the preview VM with `virtio-vga`, where the bar and a
+`SUPER + Return` terminal are confirmed by screenshot. `Hyprland
+--verify-config` is not usable for CI: it segfaults in `IPC::Socket2` once a
+config parses, because verify mode never initialises the instance path.
 
 ## Module namespaces
 

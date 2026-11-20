@@ -156,8 +156,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `exec-once = waybar` never ran. The config is now Lua (`hl.config`, `hl.bind`,
   `hl.window_rule`, `hl.on`), the module enables `programs.hyprland` and SDDM,
   and `hosts/hyprland-vm` gives the role a preview output. A `hyprland-config`
-  check fails if the module returns to the conf dialect. `bluetui` left the
-  autostart list: a terminal UI cannot start without a terminal.
+  check fails if the module returns to the conf dialect, and the host test
+  parses every installed Lua module, so a malformed config fails CI. The live
+  desktop is checked in the preview VM, because `Hyprland --verify-config`
+  segfaults on a config that loads (upstream IPC init without a compositor).
+  `bluetui` left the autostart list: a terminal UI cannot start without a
+  terminal.
 - The `dux-vm` host test asserted `systemctl is-enabled sddm.service`, which
   exits 4 because SDDM is reached through `display-manager.service` rather than
   by its own unit name. It now asserts that alias exists.

@@ -86,10 +86,11 @@ in
     machine.succeed("test -e /etc/systemd/system/display-manager.service")
   '';
 
-  # Hyprland 0.57 loads its Lua config from the XDG config directories, so the
-  # test proves the Lua files are installed, the obsolete .conf is gone, and a
-  # display manager is wired. The compositor itself needs a GPU and cannot run
-  # here; the session name is asserted at evaluation time.
+  # Hyprland 0.57 loads its Lua config from the XDG config directories. The
+  # test VM has no GPU-backed GL, so the compositor exits even though SDDM
+  # selects the session; the live desktop is checked in the preview VM on real
+  # hardware (USAGE.md). What CI can prove is the wiring and that every Lua
+  # file parses: a malformed config would otherwise fail silently at boot.
   hyprland-vm = mkHostTest "hyprland-vm" ../hosts/hyprland-vm/default.nix [
     ({ config, ... }: {
       assertions = [
@@ -107,11 +108,16 @@ in
         }
       ];
     })
+    ({ pkgs, ... }: { environment.systemPackages = [ pkgs.lua ]; })
   ] ''
     machine.succeed("test -f /etc/xdg/hypr/hyprland.lua")
-    machine.succeed("grep -q 'require(\"looknfeel\")' /etc/xdg/hypr/hyprland.lua")
     machine.succeed("test ! -e /etc/xdg/hypr/hyprland.conf")
     machine.succeed("test -e /etc/systemd/system/display-manager.service")
+    machine.succeed("grep -q 'require(\"looknfeel\")' /etc/xdg/hypr/hyprland.lua")
+
+    # Parse every module. `luac -p` catches a truncated or malformed config
+    # without needing a compositor.
+    machine.succeed("for f in /etc/xdg/hypr/*.lua; do luac -p \"$f\"; done")
   '';
 
   # The preview host has to prove its desktop wiring installs and that the

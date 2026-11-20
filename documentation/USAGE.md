@@ -54,8 +54,10 @@ nix build .#nixosConfigurations.noctalia-vm.config.system.build.vm
 All three log in without a greeter: `dux-vm` and `hyprland-vm` through SDDM
 autologin, `noctalia-vm` through greetd's `initial_session`, because
 `services.displayManager.autoLogin` does not apply to greetd. The guest user
-matches the desktop name. Each VM asks QEMU for
-`virtio-vga,xres=1920,yres=1080` and renders through Mesa's software path,
+matches the desktop name. Hyprland 0.57 loads only `hyprland.lua` from the XDG
+config directories, so `roles/hyprland.nix` enables `programs.hyprland` and
+writes Lua there; `.conf` files are ignored without an error. Each VM asks QEMU
+for `virtio-vga,xres=1920,yres=1080` and renders through Mesa's software path,
 because virgl aborts QEMU (`Couldn't find current GLX or EGL context`) on a host
 that gives it no GL context. The explicit mode matters: QEMU's default is
 1280x800, and the GTK console magnifies that to fill the window. A host with
