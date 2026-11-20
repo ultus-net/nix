@@ -6,7 +6,7 @@
 
   config = lib.mkIf config.hyprland.enable {
     environment.systemPackages = with pkgs; [
-      hyprland alacritty brave nautilus yazi lazygit lazydocker neovim feh libva-utils zsh btop powertop bluetui networkmanager waybar swww grim slurp
+      hyprland alacritty brave nautilus yazi lazygit lazydocker neovim feh libva-utils zsh btop powertop bluetui networkmanager waybar awww grim slurp
     ];
     users.defaultUserShell = pkgs.zsh;
 
@@ -118,7 +118,7 @@
       "xdg/hypr/autostart.lua".text = ''
         hl.on("hyprland.start", function()
           hl.exec_cmd("waybar")
-          hl.exec_cmd("swww-daemon")
+          hl.exec_cmd("awww-daemon")
         end)
       '';
       "xdg/hypr/windows.lua".text = ''
