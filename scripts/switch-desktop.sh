@@ -42,11 +42,25 @@ HOST_FILE="$REPO_ROOT/hosts/${HOST}/default.nix"
 [ -f "$ROLE_PATH" ] || { echo "Error: role not found at $ROLE_PATH"; exit 1; }
 [ -f "$HOST_FILE" ] || { echo "Error: host not found at $HOST_FILE"; show_usage; }
 
-CURRENT_ROLE="$(grep -oE '\.\./\.\./roles/[a-z]+\.nix' "$HOST_FILE" | head -1 || true)"
+# A unit wrapper imports a shared host directory and adds its own name. The
+# role line lives in the shared file, so edit that file and rebuild the unit
+# that was asked for. The change reaches every unit built from the shared host.
+SHARED_IMPORT="$(grep -oE '\.\./[a-z0-9-]+/default\.nix' "$HOST_FILE" | head -1 || true)"
+ROLE_FILE="$HOST_FILE"
+if [ -n "$SHARED_IMPORT" ]; then
+  SHARED_HOST="${SHARED_IMPORT#../}"
+  SHARED_HOST="${SHARED_HOST%/default.nix}"
+  ROLE_FILE="$REPO_ROOT/hosts/${SHARED_HOST}/default.nix"
+  echo "$HOST imports hosts/${SHARED_HOST}, which every unit built from it shares."
+fi
+
+[ -f "$ROLE_FILE" ] || { echo "Error: role host not found at $ROLE_FILE"; exit 1; }
+
+CURRENT_ROLE="$(grep -oE '\.\./\.\./roles/[a-z]+\.nix' "$ROLE_FILE" | head -1 || true)"
 NEW_ROLE="../../roles/${DESKTOP}.nix"
 
 if [ "$CURRENT_ROLE" = "$NEW_ROLE" ]; then
-  echo "$HOST already imports $NEW_ROLE; nothing to change."
+  echo "$HOST already uses $NEW_ROLE; nothing to change."
   exit 0
 fi
 
@@ -56,16 +70,16 @@ trap 'rm -f "$TMP_FILE"' EXIT
 if [ -n "$CURRENT_ROLE" ]; then
   awk -v old="$CURRENT_ROLE" -v new="$NEW_ROLE" '
     !done && index($0, old) { sub(old, new); done = 1 } { print }
-  ' "$HOST_FILE" > "$TMP_FILE"
+  ' "$ROLE_FILE" > "$TMP_FILE"
 else
   awk -v new="    $NEW_ROLE" '
     !done && /\.\.\/\.\.\/modules\/base\.nix/ { print; print new; done = 1; next } { print }
-  ' "$HOST_FILE" > "$TMP_FILE"
+  ' "$ROLE_FILE" > "$TMP_FILE"
 fi
 
 echo "Host $HOST: ${CURRENT_ROLE:-no desktop role} -> $NEW_ROLE"
 echo ""
-diff -u "$HOST_FILE" "$TMP_FILE" || true
+diff -u "$ROLE_FILE" "$TMP_FILE" || true
 echo ""
 read -p "Apply and rebuild $HOST? (y/N) " -n 1 -r
 echo
@@ -75,7 +89,7 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
   exit 0
 fi
 
-cp "$TMP_FILE" "$HOST_FILE"
+cp "$TMP_FILE" "$ROLE_FILE"
 
 if [ "$EUID" -ne 0 ]; then
   SUDO="sudo"

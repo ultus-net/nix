@@ -89,7 +89,7 @@ Top level:
 
 | Output | What |
 | --- | --- |
-| `nixosConfigurations` | `base-server`, `tower`, `work-laptop`, `elitedesk-800-g4`, `dux-vm`, `noctalia-vm` |
+| `nixosConfigurations` | `base-server`, `tower`, `work-laptop`, `elitedesk-800-g4`, `dev-01` to `dev-04`, `dux-vm`, `noctalia-vm` |
 | `homeConfigurations."hunter@x86_64-linux"` | the standalone HM profile |
 | `templates.homeManager` | a starting point for another HM config |
 
@@ -101,6 +101,7 @@ Top level:
 | `no-initial-password` | no `initialHashedPassword` outside `hosts/example/` |
 | `agent-sandbox-proxy` | the proxy's allowlist, address filter and dialer |
 | `work-laptop-boot` | the work-laptop loader choice and EFI install target match the ESP the host declares, which the QEMU host test cannot see |
+| `dev-hostnames` | each EliteDesk unit wrapper overrides the shared hostname, so the four dev servers stay distinguishable |
 | `<host>` (per host) | the real host module reaches `multi-user.target` in QEMU |
 
 The host tests come from `tests/hosts.nix`. Each one builds from the real host
