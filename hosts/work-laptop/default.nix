@@ -35,6 +35,10 @@
   # ESP carries only loaders: bootupd keeps \EFI\fedora\ and NixOS adds
   # \EFI\nixos\. Installing as removable would write \EFI\BOOT\BOOTX64.EFI and
   # shadow the bootc entry, so that stays off.
+  # GRUB writes its EFI binaries to `boot.loader.efi.efiSysMountPoint`, which
+  # defaults to /boot. This host keeps /boot on btrfs, where the firmware
+  # cannot read them, so name the mounted ESP explicitly.
+  boot.loader.efi.efiSysMountPoint = "/boot/efi";
   boot.loader.systemd-boot.enable = false;
   boot.loader.grub = {
     enable = true;

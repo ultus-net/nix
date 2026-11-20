@@ -12,8 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   carry. NixOS mounts a btrfs volume labelled `nixos` as `@root`, `@home`,
   `@nix` and `@boot`, keeps its generations off the 600M ESP it shares with
   the bootc slot, and boots with GRUB instead of systemd-boot. The previous
-  values named an ext4 root, a swap partition and kernels on the ESP, and
-  could not boot that machine.
+  values named an ext4 root and a swap partition that do not exist on that
+  disk, and put kernels on the ESP.
 - `documentation/INSTALL.md` names both disk labels (`EFI` for the ESP and
   `nixos-root` for the root) and states what a mislabelled ESP costs: the
   machine installs and boots once, then keeps booting the old generation

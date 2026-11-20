@@ -61,8 +61,8 @@
 
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 
-  # The AX211 Wi-Fi and the i915 GuC/HuC blobs live outside the
-  # redistributable subset.
+  # All firmware, not just the redistributable subset: the AX211 and the i915
+  # GuC/HuC blobs sit outside it, and this host tracks the latest kernel.
   hardware.enableAllFirmware = true;
 
   # Mesa drives the integrated GPU, iHD gives VA-API decode, and the VPL
