@@ -2,7 +2,8 @@
 
 A host in this flake installs from a NixOS live ISO with one `nixos-install`
 call. The disk layout lives in that host's `hardware.nix`, so the procedure below
-assumes an existing host output: `tower`, `work-laptop`, or `base-server`.
+assumes an existing host output: `tower`, `work-laptop`, `elitedesk-800-g4`, or
+`base-server`.
 
 ## Before starting
 
@@ -19,13 +20,18 @@ nix --extra-experimental-features 'nix-command flakes' flake show /mnt/nix
 
 ## 1. Partition and mount
 
-Partition with the NixOS manual's UEFI example. Neither host uses BIOS boot.
+Partition with the NixOS manual's UEFI example. No host here uses BIOS boot.
 The layout the flake expects is fixed:
 
 | Mount | Filesystem | Size | Purpose |
 | --- | --- | --- | --- |
-| `/mnt/boot` | FAT32 | 512 MiB or more | EFI system partition |
+| `/mnt/boot` | FAT32, label `EFI` | 512 MiB or more | EFI system partition |
 | `/mnt` | ext4, label `nixos-root` | the rest | root |
+
+Both labels matter. The role placeholders and the label-based hosts resolve
+`/dev/disk/by-label/EFI` and `/dev/disk/by-label/nixos-root`, so a mislabelled
+ESP boots but leaves `/boot` unmounted, and the next `nixos-rebuild boot`
+fails. Label each filesystem when you create it.
 
 A missing `/mnt/boot` mount produces an install that does not boot.
 
@@ -35,16 +41,30 @@ A missing `/mnt/boot` mount produces an install that does not boot.
 git clone https://github.com/ultus-net/nix.git /mnt/nix
 ```
 
-## 3. Regenerate the hardware config when the disk differs
+## 3. Regenerate the hardware config, or keep the labels
 
-`hosts/<host>/hardware.nix` describes the machine the host was last installed
-on. When the disk layout differs, regenerate it on the target and replace that
-file:
+`hosts/<host>/hardware.nix` is written in one of two conventions, and a host
+stays on the one it started with:
+
+- **Labels** name the disks `/dev/disk/by-label/nixos-root` and
+  `/dev/disk/by-label/EFI`. One file installs any number of identical
+  machines, so the file never changes per unit. `elitedesk-800-g4` uses this.
+  Nothing to regenerate while the disk layout in section 1 holds.
+- **UUIDs** name the disks the installer found. The file is specific to that
+  one machine, so a reinstall or a different disk means regenerating it.
+  `tower` and `work-laptop` use this.
+
+A UUID-based host that moves to a different disk regenerates its file on the
+target:
 
 ```bash
 nixos-generate-config --root /mnt
 cp /mnt/etc/nixos/hardware-configuration.nix /mnt/nix/hosts/tower/hardware.nix
 ```
+
+A label-based host that turns out to be a different machine class regenerates
+too, then rewrites the two `device` lines from UUIDs back to the labels above.
+Otherwise the shared file stops matching its siblings.
 
 `hardware.nix` is the file that names the bootloader, the root filesystem, and
 the kernel modules. Each role ships placeholder `fileSystems` values with

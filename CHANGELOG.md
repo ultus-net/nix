@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- `documentation/INSTALL.md` names both disk labels (`EFI` for the ESP and
+  `nixos-root` for the root) and records the two `hardware.nix` conventions:
+  labels for identical machines, UUIDs for a single install.
+  `elitedesk-800-g4` is label-based, so identical EliteDesks share one file and
+  need no per-unit hardware profile.
 - Desktop applications moved out of the shared package set into the desktop
   roles: `chromium`, `spotify`, `zed-editor`, `opencode` and `discord`, and
   `thunar` on Xfce only. The headless role had installed a browser, a music
