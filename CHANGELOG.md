@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- `documentation/INSTALL.md` names both disk labels (`EFI` for the ESP and
+  `nixos-root` for the root) and states what a mislabelled ESP costs: the
+  machine installs and boots once, then keeps booting the old generation
+  because rebuilds write the kernel into the root filesystem. It also records
+  the two `hardware.nix` conventions, labels for identical machines and UUIDs
+  for a single install, with the encrypted-root case named separately.
+  `elitedesk-800-g4` is label-based, so identical EliteDesks share one file.
 - Desktop applications moved out of the shared package set into the desktop
   roles: `chromium`, `spotify`, `zed-editor`, `opencode` and `discord`, and
   `thunar` on Xfce only. The headless role had installed a browser, a music
