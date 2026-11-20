@@ -11,9 +11,10 @@ machine needs it.
 | --- | --- | --- |
 | `tower` | Noctalia | Home workstation. NVIDIA, the games drive, Docker, libvirt, PINCE. |
 | `work-laptop` | KDE | Laptop. TLP, fwupd, DisplayLink, the work toolchain. |
+| `elitedesk-800-g4` | swappable | EliteDesk 800 G4 Mini. Dev server: Podman, libvirt, Cockpit; `scripts/switch-desktop.sh` turns it into a desktop test rig. |
 | `base-server` | none | Headless. A role-only output, so it cannot rot unnoticed. |
 
-`nixosConfigurations` carries all three, plus the `dux-vm` and `noctalia-vm`
+`nixosConfigurations` carries all four, plus the `dux-vm` and `noctalia-vm`
 preview VMs. `homeConfigurations."hunter@x86_64-linux"` is the Home Manager
 profile, and `dev-image` is the toolchain container published to
 `ghcr.io/ultus-net/nix-dev`.

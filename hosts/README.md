@@ -7,6 +7,7 @@ and the role it picks.
 | --- | --- | --- |
 | `tower/` | `noctalia.nix` | NVIDIA, gaming, multimedia, Docker, libvirt, PINCE, agent sandbox |
 | `work-laptop/` | `kde.nix` | TLP, fwupd, DisplayLink, agent sandbox |
+| `elitedesk-800-g4/` | `base.nix`, swappable | Intel Coffee Lake mini PC: Podman, libvirt, Cockpit; `scripts/switch-desktop.sh` swaps the role |
 | `dux-vm/` | `dux.nix` | VM-only preview: SDDM autologin, software-rendered virtio GPU, no hardware |
 | `noctalia-vm/` | `noctalia.nix` | VM-only preview: greetd autostart, software-rendered virtio GPU, no hardware |
 | `example/` | `kde.nix` | skeleton, copied when a machine joins; not built by CI |

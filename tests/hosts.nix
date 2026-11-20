@@ -66,6 +66,18 @@ in
     machine.succeed("systemctl is-enabled tlp.service")
   '';
 
+  # The dev-server host runs the Podman runtime plus the console, and its role
+  # import is what a desktop swap rewrites. A socket unit alone would pass even
+  # with a runtime that cannot answer, so the test asks the API behind it.
+  elitedesk-800-g4 = mkHostTest "elitedesk-800-g4" ../hosts/elitedesk-800-g4/default.nix [ ]
+    ''
+      machine.wait_for_unit("podman.socket")
+      machine.wait_for_unit("cockpit.socket")
+      machine.succeed("test -L /run/docker.sock")
+      machine.succeed("podman info > /dev/null")
+      machine.succeed("docker info > /dev/null")
+    '';
+
   # The preview host only has to prove its desktop wiring evaluates and
   # installs: the Dux user unit and the display manager. SDDM is reached
   # through display-manager.service, so that is the unit name to assert.

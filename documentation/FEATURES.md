@@ -122,9 +122,12 @@ imports it.
 
 ## Containers and virtualisation
 
-`containers.nix` gives Docker, with `docker-compose`, `distrobox` and `boxbuddy`,
+`containers.nix` gives a container runtime, `distrobox` and `boxbuddy`,
 `kubectl`, `k9s`, `helm`, `kubectx` and `kustomize` behind their own options.
-`tower` enables Docker and Compose.
+`machines.containers.runtime` picks `docker` or `podman`; Podman gets a
+Docker-compatible CLI and socket, and `enableDockerCompose` installs
+`podman-compose` there instead of `docker-compose`. `tower` runs Docker, and
+`elitedesk-800-g4` runs Podman.
 
 `virtualization.nix` gives `libvirt`, QEMU/KVM with the hardware acceleration
 flags, `virt-manager` through its program option, `virt-viewer` and `virsh`, plus
