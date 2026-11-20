@@ -27,6 +27,24 @@
   };
 
   # ============================================================================
+  # Boot Loader
+  # ============================================================================
+
+  # The disk holds a bootc slot on p3 and NixOS on p4. GRUB reads btrfs, so
+  # NixOS keeps its generations in the @boot subvolume while the shared 600M
+  # ESP carries only loaders: bootupd keeps \EFI\fedora\ and NixOS adds
+  # \EFI\nixos\. Installing as removable would write \EFI\BOOT\BOOTX64.EFI and
+  # shadow the bootc entry, so that stays off.
+  boot.loader.systemd-boot.enable = false;
+  boot.loader.grub = {
+    enable = true;
+    device = "nodev";
+    efiSupport = true;
+    efiInstallAsRemovable = false;
+    configurationLimit = 20;
+  };
+
+  # ============================================================================
   # Regional Settings
   # ============================================================================
   
