@@ -45,13 +45,13 @@ HOST_FILE="$REPO_ROOT/hosts/${HOST}/default.nix"
 # A unit wrapper imports a shared host directory and adds its own name. The
 # role line lives in the shared file, so edit that file and rebuild the unit
 # that was asked for. The change reaches every unit built from the shared host.
-# The import must be written `../<host>/default.nix`; any other shape is
+# An import is `../<host>/default.nix` or `../<host>`; any other shape is
 # treated as a host file of its own.
-SHARED_IMPORT="$(grep -oE '\.\./[a-z0-9-]+/default\.nix' "$HOST_FILE" | head -1 || true)"
+SHARED_IMPORT="$(grep -oE '(^|[^/])\.\./[a-z0-9][a-z0-9-]*(/default\.nix)?' "$HOST_FILE" | head -1 || true)"
 ROLE_FILE="$HOST_FILE"
 SHARED_NOTE=""
 if [ -n "$SHARED_IMPORT" ]; then
-  SHARED_HOST="${SHARED_IMPORT#../}"
+  SHARED_HOST="${SHARED_IMPORT#*../}"
   SHARED_HOST="${SHARED_HOST%/default.nix}"
   ROLE_FILE="$REPO_ROOT/hosts/${SHARED_HOST}/default.nix"
   SHARED_NOTE=" (shared by every unit built from hosts/${SHARED_HOST})"
@@ -82,7 +82,7 @@ else
 fi
 
 echo "Role file: ${ROLE_LABEL}${SHARED_NOTE}"
-echo "Host $HOST: ${CURRENT_ROLE:-no desktop role} -> $NEW_ROLE"
+echo "Role import: ${CURRENT_ROLE:-no desktop role} -> $NEW_ROLE"
 echo ""
 diff -u "$ROLE_FILE" "$TMP_FILE" || true
 echo ""
