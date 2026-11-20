@@ -58,13 +58,12 @@ in {
       delta        # Better diff
       
       # Data processing
-      jq yq        # JSON/YAML processors
+      jq yq-go     # JSON/YAML processors
       
       # Task runner
       just
       
-      # Editor & shell
-      thunar
+      # Shell prompt
       starship
       
       # Development helpers
@@ -75,9 +74,6 @@ in {
       age
       gnupg
       
-      # Clipboard (Wayland)
-      wl-clipboard
-      
       # Enhanced CLI Tools
       fzf          # Fuzzy finder (essential for productivity)
       zoxide       # Smarter cd command
@@ -86,15 +82,10 @@ in {
       trash-cli    # Safe rm alternative (moves to trash)
       glow         # Markdown renderer for terminal
       
-      # Apps
-      chromium
-      spotify
-      
-      # Official NixOS wallpapers from nixos-artwork
-      nixos-artwork.wallpapers.nineish-dark-gray
-      nixos-artwork.wallpapers.simple-blue
-      nixos-artwork.wallpapers.stripes-logo
-      nixos-artwork.wallpapers.mosaic-blue
+      # Nix maintenance: rebuild progress, generation diffs, store inspection
+      nix-output-monitor
+      nvd
+      nix-tree
     ];
 
     # Helpful aliases for config management

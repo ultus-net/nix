@@ -17,8 +17,10 @@
     ../../modules/security.nix
 
     # All optional feature modules
+    ../../modules/development.nix
     ../../modules/gaming.nix
     ../../modules/multimedia.nix
+    ../../modules/sysadmin.nix
     ../../modules/virtualization.nix
     ../../modules/containers.nix
     ../../modules/auto-upgrade.nix
@@ -97,6 +99,7 @@
         "kvm"             # KVM access
         "i2c"             # access to /dev/i2c-* devices
         "bluetooth"       # bluetooth device management
+        "wireshark"       # unprivileged packet capture via the dumpcap wrapper
       ];
 
       # No password hash is committed. The account starts locked; set the
@@ -123,6 +126,23 @@
   multimedia.enable = true;
   virtualization.enable = true;
   machines.containers.enable = true;
+  machines.containers.enableDockerCompose = true;
+
+  # Desktop security extras: fingerprint login and mDNS discovery. The
+  # headless role leaves both off, so tower opts in explicitly.
+  securityDefaults.enableFprintd = true;
+  securityDefaults.enableAvahi = true;
+
+  # PC/SC, the udev rules and the manager binary in one option, rather than a
+  # bare package that cannot talk to the YubiKey.
+  programs.yubikey-manager.enable = true;
+
+  # Backup, network diagnostics and hardware monitoring. The module already
+  # carries the package lists, so this host does not repeat them.
+  sysadmin.enable = true;
+
+  # GPU fan curves and monitoring for the RTX 3070.
+  services.lact.enable = true;
 
   # Configuration deployment helper
   deployConfig.enable = true;
@@ -258,16 +278,16 @@
   #  machines.wallpapers module, so we no longer install the
   #  nixos-artwork wallpaper packages here.)
   environment.systemPackages = with pkgs; [
-    # System monitoring and management
-    htop
-    btop
+    # System monitoring. htop and btop come from the shared set, and nvtop
+    # comes from modules/nvidia.nix, so this host adds only the rest.
     iotop
     powertop
 
-    # Hardware utilities
-    pciutils
-    usbutils
-    lm_sensors
+    # GPU overlay settings for MangoHud
+    goverlay
+
+    # Secure Boot key management; sbctl signs the bootloader and kernels.
+    sbctl
 
     # RGB managers
     openrgb

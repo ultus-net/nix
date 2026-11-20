@@ -9,6 +9,7 @@
     ../modules/fonts.nix
     ../modules/home-manager.nix
     ../modules/wallpapers.nix
+    ../modules/wayland-utils.nix
     ../modules/dux.nix
   ];
 
@@ -26,11 +27,17 @@
   };
 
   dux.enable = true;
+  waylandUtils.enable = true;
+  waylandUtils.sessionTarget = "hyprland-session.target";
 
   programs.zsh.enable = true;
 
+  # Nautilus links GVfs for trash, removable devices and remote locations.
+  services.gvfs.enable = true;
+
   machines.wallpapers.enable = lib.mkDefault true;
 
+  # Desktop apps live with the desktop, not in the shared package set.
   commonPackages.enable = true;
-  commonPackages.packages = [ pkgs.git pkgs.curl ];
+  commonPackages.packages = [ pkgs.git pkgs.curl pkgs.chromium pkgs.spotify pkgs.zed-editor pkgs.opencode pkgs.discord ];
 }

@@ -62,7 +62,7 @@
           direnv
           nix-direnv
           jq
-          yq
+          yq-go
           ripgrep
           fd
           sd

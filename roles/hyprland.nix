@@ -11,6 +11,7 @@
     ../modules/common-packages.nix
     ../modules/home-manager.nix
     ../modules/wallpapers.nix
+    ../modules/wayland-utils.nix
     ../modules/hyprland.nix
   ];
 
@@ -30,14 +31,19 @@
 
   # Enable Hyprland desktop
   hyprland.enable = true;
+  waylandUtils.enable = true;
+  waylandUtils.sessionTarget = "hyprland-session.target";
 
   # Ensure zsh is enabled if set as default shell
   programs.zsh.enable = true;
 
+  # Nautilus links GVfs for trash, removable devices and remote locations.
+  services.gvfs.enable = true;
+
   # Enable NixOS wallpaper collection by default
   machines.wallpapers.enable = lib.mkDefault true;
 
-  # Example: add common packages
+  # Desktop apps live with the desktop, not in the shared package set.
   commonPackages.enable = true;
-  commonPackages.packages = [ pkgs.git pkgs.curl ];
+  commonPackages.packages = [ pkgs.git pkgs.curl pkgs.chromium pkgs.spotify pkgs.zed-editor pkgs.opencode pkgs.discord ];
 }

@@ -10,7 +10,7 @@ is what `scripts/check-layering.py` enforces.
 | --- | --- | --- |
 | `base.nix` | none | sets `stateVersion`, flakes, `nix.gc`, locale; imports `zram.nix` |
 | `networking.nix` | none | NetworkManager |
-| `security.nix` | none | firewall, sshd, key-only auth, no root login |
+| `security.nix` | `securityDefaults` | firewall, SSH agent, `sops`; fprintd and avahi only when enabled |
 | `audio.nix` | none | PipeWire |
 | `fonts.nix` | none | fontconfig, JetBrains Mono and FiraCode Nerd Fonts, `noto-fonts-color-emoji` |
 | `home-manager.nix` | none | the HM NixOS module |
@@ -23,6 +23,7 @@ is what `scripts/check-layering.py` enforces.
 | `containers.nix` | `machines.containers` | nothing until enabled |
 | `virtualization.nix` | `virtualization` | nothing until enabled |
 | `sysadmin.nix` | `sysadmin` | nothing until enabled |
+| `wayland-utils.nix` | `waylandUtils` | nothing until enabled; mixer, media keys, clipboard history, screenshot annotation |
 | `pince.nix` | `pince` | nothing until enabled |
 | `deploy-config.nix` | `deployConfig` | nothing until enabled |
 | `wallpapers.nix` | `machines.wallpapers` | nothing until enabled |

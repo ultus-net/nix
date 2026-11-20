@@ -1,24 +1,32 @@
 { config, pkgs, lib, ... }:
+let
+  cfg = config.securityDefaults;
+in
 {
-  # Security module: small, pragmatic defaults for desktop usage; each line
-  # explains the reason for the chosen default.
+  # Security defaults shared by every host. The two desktop extras are opt-in,
+  # because a headless host needs neither.
+  options.securityDefaults = {
+    enableFprintd = lib.mkEnableOption "the fingerprint daemon";
 
-  # Enable fingerprintd service for fingerprint authentication when hardware
-  # and PAM integration are present.
-  services.fprintd.enable = true;
-
-  # Avahi provides mDNS/zeroconf for local network discovery (useful for
-  # AirPrint, printers, and other services). `openFirewall` relaxes firewall
-  # rules for local service discovery when enabled.
-  services.avahi = {
-    enable = true;
-    nssmdns4 = true;
-    openFirewall = true;
+    enableAvahi = lib.mkEnableOption "mDNS/zeroconf service discovery";
   };
 
-  # Start an SSH agent in user sessions to hold private keys for authentication.
-  programs.ssh.startAgent = true;
+  config = {
+    services.fprintd.enable = cfg.enableFprintd;
 
-  # Keep the firewall enabled by default and avoid opening extra ports here.
-  networking.firewall.enable = true;
+    # `openFirewall` relaxes the rules for printer and device discovery.
+    services.avahi = lib.mkIf cfg.enableAvahi {
+      enable = true;
+      nssmdns4 = true;
+      openFirewall = true;
+    };
+
+    programs.ssh.startAgent = true;
+
+    networking.firewall.enable = true;
+
+    # sops decrypts at activation and needs no daemon or key material in the
+    # store, so every host can carry it.
+    environment.systemPackages = [ pkgs.sops ];
+  };
 }

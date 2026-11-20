@@ -64,11 +64,12 @@ in {
       dnsutils         # dig, nslookup
       traceroute       # Network path tracing
       bandwhich        # Network bandwidth monitor
-      dogdns           # Better dig
+      doggo            # Better dig
       gping            # Ping with graph
       iperf3           # Network performance
       tcpdump          # Packet analyzer
-      wireshark        # GUI packet analyzer
+      mtr              # Per-hop latency and loss
+      ethtool          # NIC link, driver and offload state
       nmap             # Network scanner
     ] ++ lib.optionals cfg.enableHardwareMonitoring [
       # Hardware Monitoring & Information
@@ -83,6 +84,13 @@ in {
       pciutils         # lspci and PCI tools
     ] ++ cfg.extraPackages;
     
+    # Wireshark needs its setcap wrapper. The module creates the `wireshark`
+    # group and the wrapper, but a module cannot name a user, so each host that
+    # enables this adds its account to `wireshark` (tower does).
+    programs.wireshark = lib.mkIf cfg.enableNetworkDiagnostics {
+      enable = true;
+    };
+
     # Enable SMART monitoring daemon
     services.smartd = lib.mkIf cfg.enableHardwareMonitoring {
       enable = lib.mkDefault true;

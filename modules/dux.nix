@@ -32,8 +32,6 @@ in
       kitty # Hyprland's example config binds its terminal to kitty
       nautilus
       firefox
-      brightnessctl
-      playerctl
     ];
   };
 }
