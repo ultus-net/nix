@@ -150,6 +150,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- `modules/hyprland.nix` wrote Hyprland's retired `.conf` dialect to
+  `/etc/xdg/hypr`, which Hyprland 0.57 no longer reads. A host on the Hyprland
+  role booted the stock example config with no bar and no keybindings, and
+  `exec-once = waybar` never ran. The config is now Lua (`hl.config`, `hl.bind`,
+  `hl.window_rule`, `hl.on`), the module enables `programs.hyprland` and SDDM,
+  and `hosts/hyprland-vm` gives the role a preview output. A `hyprland-config`
+  check fails if the module returns to the conf dialect. `bluetui` left the
+  autostart list: a terminal UI cannot start without a terminal.
 - The `dux-vm` host test asserted `systemctl is-enabled sddm.service`, which
   exits 4 because SDDM is reached through `display-manager.service` rather than
   by its own unit name. It now asserts that alias exists.

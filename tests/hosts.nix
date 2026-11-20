@@ -86,6 +86,34 @@ in
     machine.succeed("test -e /etc/systemd/system/display-manager.service")
   '';
 
+  # Hyprland 0.57 loads its Lua config from the XDG config directories, so the
+  # test proves the Lua files are installed, the obsolete .conf is gone, and a
+  # display manager is wired. The compositor itself needs a GPU and cannot run
+  # here; the session name is asserted at evaluation time.
+  hyprland-vm = mkHostTest "hyprland-vm" ../hosts/hyprland-vm/default.nix [
+    ({ config, ... }: {
+      assertions = [
+        {
+          assertion = config.programs.hyprland.enable;
+          message = "hyprland-vm must enable programs.hyprland, which provides the session file";
+        }
+        {
+          assertion = config.services.displayManager.defaultSession == "hyprland";
+          message = "hyprland-vm must select the hyprland session";
+        }
+        {
+          assertion = config.services.displayManager.autoLogin.user == "hyprland";
+          message = "hyprland-vm must start the preview session without a greeter";
+        }
+      ];
+    })
+  ] ''
+    machine.succeed("test -f /etc/xdg/hypr/hyprland.lua")
+    machine.succeed("grep -q 'require(\"looknfeel\")' /etc/xdg/hypr/hyprland.lua")
+    machine.succeed("test ! -e /etc/xdg/hypr/hyprland.conf")
+    machine.succeed("test -e /etc/systemd/system/display-manager.service")
+  '';
+
   # The preview host has to prove its desktop wiring installs and that the
   # session starts without a greeter. A Wayland session cannot run in the test
   # VM, so the greeter path is checked at evaluation time instead.

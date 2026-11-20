@@ -13,6 +13,7 @@ nix/
 │   ├── work-laptop/
 │   ├── elitedesk-800-g4/  # dev server, role swapped by scripts/switch-desktop.sh
 │   ├── dux-vm/            # VM-only preview of roles/dux.nix
+│   ├── hyprland-vm/       # VM-only preview of roles/hyprland.nix
 │   ├── noctalia-vm/       # VM-only preview of roles/noctalia.nix
 │   └── example/           # skeleton, copied when a machine joins
 ├── roles/                 # desktop compositions
@@ -89,7 +90,7 @@ Top level:
 
 | Output | What |
 | --- | --- |
-| `nixosConfigurations` | `base-server`, `tower`, `work-laptop`, `elitedesk-800-g4`, `dev-01` to `dev-04`, `dux-vm`, `noctalia-vm` |
+| `nixosConfigurations` | `base-server`, `tower`, `work-laptop`, `elitedesk-800-g4`, `dev-01` to `dev-04`, `dux-vm`, `hyprland-vm`, `noctalia-vm` |
 | `homeConfigurations."hunter@x86_64-linux"` | the standalone HM profile |
 | `templates.homeManager` | a starting point for another HM config |
 
@@ -111,8 +112,9 @@ service that host actually enables. `work-laptop` asserts `tlp.service`, not
 `fwupd.service`: fwupd is `linked` there, never `enabled`, so `is-enabled` exits
 non-zero on a correct system. `elitedesk-800-g4` goes past the unit: it checks
 the Docker socket symlink exists, and that `podman info` and `docker info`
-answer behind it, so a running socket with a dead runtime fails. The two VM previews assert their desktop wiring:
-`dux-vm` the DMS user unit and SDDM, `noctalia-vm` the Noctalia unit's
+answer behind it, so a running socket with a dead runtime fails. The VM previews
+assert their desktop wiring: `dux-vm` the DMS user unit and SDDM, `hyprland-vm`
+the Lua config in `/etc/xdg/hypr` and SDDM, `noctalia-vm` the Noctalia unit's
 `WantedBy=umbriel-session.target`, greetd, and the installed `luciole`. Those
 tests prove wiring, not a live session: the test VM has no DRM device and no
 GL, so the compositor starts only on real hardware or under the preview GPU.
