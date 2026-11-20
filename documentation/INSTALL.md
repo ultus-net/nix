@@ -28,10 +28,12 @@ The layout the flake expects is fixed:
 | `/mnt/boot` | FAT32, label `EFI` | 512 MiB or more | EFI system partition |
 | `/mnt` | ext4, label `nixos-root` | the rest | root |
 
-Both labels matter. The role placeholders and the label-based hosts resolve
-`/dev/disk/by-label/EFI` and `/dev/disk/by-label/nixos-root`, so a mislabelled
-ESP boots but leaves `/boot` unmounted, and the next `nixos-rebuild boot`
-fails. Label each filesystem when you create it.
+Both labels matter, and the host's own `hardware.nix` is what names them. The
+role placeholders use the same paths so a role-only output still evaluates. A
+mislabelled ESP still installs and boots once, because the firmware reads the
+ESP directly. The installed system then mounts nothing at `/boot`, so the next
+`nixos-rebuild boot` writes kernels into the root filesystem and the machine
+keeps booting the old generation.
 
 A missing `/mnt/boot` mount produces an install that does not boot.
 
@@ -48,11 +50,17 @@ stays on the one it started with:
 
 - **Labels** name the disks `/dev/disk/by-label/nixos-root` and
   `/dev/disk/by-label/EFI`. One file installs any number of identical
-  machines, so the file never changes per unit. `elitedesk-800-g4` uses this.
-  Nothing to regenerate while the disk layout in section 1 holds.
-- **UUIDs** name the disks the installer found. The file is specific to that
-  one machine, so a reinstall or a different disk means regenerating it.
-  `tower` and `work-laptop` use this.
+  machines, so it does not change per unit. `elitedesk-800-g4` uses this, and
+  nothing needs regenerating while the layout in section 1 holds. Those are
+  the same paths the roles carry as placeholders; an installed machine is
+  configured by its own file, never by the placeholder.
+- **UUIDs** name the disks the installer found. The file belongs to that one
+  machine, so a reinstall or a different disk means regenerating it. `tower`
+  and `work-laptop` use this.
+
+An encrypted root replaces the root `device` with the `/dev/mapper` name from
+section 4, whichever convention the host started on. The ESP keeps its label,
+or its UUID, as usual.
 
 A UUID-based host that moves to a different disk regenerates its file on the
 target:
@@ -63,8 +71,8 @@ cp /mnt/etc/nixos/hardware-configuration.nix /mnt/nix/hosts/tower/hardware.nix
 ```
 
 A label-based host that turns out to be a different machine class regenerates
-too, then rewrites the two `device` lines from UUIDs back to the labels above.
-Otherwise the shared file stops matching its siblings.
+too, then rewrites the root `device` from the UUID back to its label. Otherwise
+the shared file stops matching its siblings.
 
 `hardware.nix` is the file that names the bootloader, the root filesystem, and
 the kernel modules. Each role ships placeholder `fileSystems` values with
@@ -133,7 +141,10 @@ system needs no flags.
   outputs.
 - **Evaluation fails during install**: run the same `flake show` command, then
   `nix build` the host output to see the full error.
-- **The system installs but does not boot**: `/mnt/boot` was not mounted during
+- **The system installs but never boots**: `/mnt/boot` was not mounted during
   the install, or `hardware.nix` names a bootloader the firmware cannot use.
+- **It boots, but a rebuild does not take effect**: the ESP label or UUID does
+  not match `hardware.nix`, so the kernel was written to the root filesystem
+  instead of the ESP. `findmnt /boot` shows whether it is a separate mount.
 - **The first login is impossible**: expected. The account is locked until
   `passwd` runs on the console.
