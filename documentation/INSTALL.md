@@ -43,6 +43,15 @@ A missing `/mnt/boot` mount produces an install that does not boot.
 git clone https://github.com/ultus-net/nix.git /mnt/nix
 ```
 
+When `/nix` is its own volume, clone into the home tree instead, so the store
+mount does not also hold the repository. `hosts/work-laptop` names the clone
+in `machines.autoUpgrade.flakePath`, currently `/home/hunter/Documents/nix`, so
+clone where that option points:
+
+```bash
+git clone https://github.com/ultus-net/nix.git /mnt/home/hunter/Documents/nix
+```
+
 ## 3. Regenerate the hardware config, or keep the labels
 
 `hosts/<host>/hardware.nix` is written in one of two conventions, and a host
@@ -56,7 +65,12 @@ stays on the one it started with:
   configured by its own file, never by the placeholder.
 - **UUIDs** name the disks the installer found. The file belongs to that one
   machine, so a reinstall or a different disk means regenerating it. `tower`
-  and `work-laptop` use this.
+  uses this.
+- **Subvolumes** name one btrfs volume by label and mount separate subvolumes
+  from it. `work-laptop` labels its NixOS volume `nixos` and mounts `@root`,
+  `@home`, `@nix` and `@boot` from it, so generations stay off the ESP it
+  shares with a bootc slot. Its ESP is named by UUID because the other OS
+  already owns that partition.
 
 An encrypted root replaces the root `device` with the `/dev/mapper` name from
 section 4, whichever convention the host started on. The ESP keeps its label,

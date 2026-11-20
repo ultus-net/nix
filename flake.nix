@@ -127,6 +127,20 @@
           touch $out
         '';
 
+        # GRUB installs its EFI binaries to `boot.loader.efi.efiSysMountPoint`,
+        # which defaults to /boot. work-laptop keeps /boot on btrfs, where the
+        # firmware cannot read them, so the loader choice and the ESP mount are
+        # asserted here. The host test cannot see either: it disables both
+        # loaders and replaces the filesystems with a single ext4 root.
+        work-laptop-boot =
+          assert self.nixosConfigurations.work-laptop.config.boot.loader.grub.enable;
+          assert !self.nixosConfigurations.work-laptop.config.boot.loader.systemd-boot.enable;
+          assert self.nixosConfigurations.work-laptop.config.boot.loader.efi.efiSysMountPoint
+            == (self.nixosConfigurations.work-laptop.config.fileSystems."/boot/efi".mountPoint or null);
+          pkgs.runCommand "check-work-laptop-boot" { } ''
+            touch $out
+          '';
+
         # The sandbox proxy decides every egress from an agent session, so its
         # allowlist matching and its refusal of non-global addresses are
         # exercised without a network.

@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- `hosts/work-laptop` now describes the two-slot disk the Dell Pro 14 will
+  carry. NixOS mounts a btrfs volume labelled `nixos` as `@root`, `@home`,
+  `@nix` and `@boot`, keeps its generations off the 600M ESP it shares with
+  the bootc slot, and boots with GRUB instead of systemd-boot. The previous
+  values described an ext4 root, a swap partition and kernels on the ESP,
+  none of which match that disk. A `work-laptop-boot` check now asserts the
+  loader choice and the ESP mount point, which the QEMU host test cannot see.
 - `documentation/INSTALL.md` names both disk labels (`EFI` for the ESP and
   `nixos-root` for the root) and states what a mislabelled ESP costs: the
   machine installs and boots once, then keeps booting the old generation
