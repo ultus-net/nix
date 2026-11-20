@@ -63,6 +63,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   baseline. `pwvucontrol`, `playerctl`, `brightnessctl`, `cliphist` with its
   `wl-paste` watcher, `satty`, `wlr-randr` and `wf-recorder`. The noctalia, dux
   and hyprland roles enable it.
+- `modules/nix-index.nix` (`nixIndex.enable`): `nix-locate` and the
+  command-not-found hook over an index of the flake's own nixpkgs. A daily user
+  timer runs a `find` probe and rebuilds only when the cache is missing or older
+  than `nixIndex.maxAgeDays`, so the expensive rebuild stays weekly. `tower`
+  enables it.
+- The shared package set gains `lnav`, `jless`, `watchexec`, `gitleaks`, `nh` and
+  `nix-search-tv`.
 - The shared package set carries `nix-output-monitor`, `nvd` and `nix-tree`, and
   the development toolchain adds `meson`, `ninja`, `ccache`, `clang`, `gdb` and
   `uv`. `tower` and `work-laptop` now import `development.nix`; no host did, so
