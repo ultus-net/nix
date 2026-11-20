@@ -23,6 +23,9 @@ its own source.
 Rewrites the host's role import and rebuilds. Valid names are `kde`, `dux`,
 `hyprland`, `xfce` and `base`. The host defaults to `hostname -s`, so the bare
 form works on the machine it targets. It shows the diff and asks before writing.
+On a unit wrapper, one that imports `../<host>/default.nix` or `../<host>`, it
+edits the shared host and rebuilds the unit named, so the change reaches every
+unit built from that host. Any other host file is treated as its own role file.
 
 ### `switch-host.sh [<flake-ref>]`
 

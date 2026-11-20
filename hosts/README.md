@@ -8,6 +8,7 @@ and the role it picks.
 | `tower/` | `noctalia.nix` | NVIDIA, gaming, multimedia, Docker, libvirt, PINCE, agent sandbox |
 | `work-laptop/` | `kde.nix` | TLP, fwupd, DisplayLink, agent sandbox |
 | `elitedesk-800-g4/` | `base.nix`, swappable | Intel Coffee Lake mini PC: Podman, libvirt, Cockpit; `scripts/switch-desktop.sh` swaps the role |
+| `dev-01/` … `dev-04/` | inherits `elitedesk-800-g4` | four identical EliteDesk units that differ only in hostname |
 | `dux-vm/` | `dux.nix` | VM-only preview: SDDM autologin, software-rendered virtio GPU, no hardware |
 | `noctalia-vm/` | `noctalia.nix` | VM-only preview: greetd autostart, software-rendered virtio GPU, no hardware |
 | `example/` | `kde.nix` | skeleton, copied when a machine joins; not built by CI |
@@ -50,6 +51,18 @@ A host wins over a role because a role uses `lib.mkDefault` for anything a
 machine might differ on. Retention and zram sizing live in `modules/base.nix`
 and `modules/zram.nix`; `FEATURES.md` carries the option lists, so this file
 does not restate them.
+
+## Several units, one image
+
+Identical machines share a host directory and add one wrapper per unit. A
+wrapper imports the shared host and forces the name, so `hosts/dev-01/default.nix`
+is that import plus `networking.hostName = lib.mkForce "dev-01";`. It carries no
+`hardware.nix`, and the shared host's test covers it. `dev-01` through `dev-04`
+all import `hosts/elitedesk-800-g4`, so a change there reaches every unit.
+
+`scripts/switch-desktop.sh` follows the import and edits the shared host, then
+rebuilds the unit that was named. A unit that needs a second difference sets it
+in the wrapper with `lib.mkForce` where the shared host assigns the same option.
 
 ## Adding a machine
 

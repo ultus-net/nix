@@ -73,6 +73,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- `hosts/dev-01` to `hosts/dev-04`: four HP EliteDesk 800 G4 Mini units that
+  differ only in hostname. Each wrapper imports `hosts/elitedesk-800-g4` and
+  forces `networking.hostName`, so Cockpit, SSH and the logs can tell the units
+  apart. A `dev-hostnames` check asserts all four overrides, and the units share
+  the `elitedesk-800-g4` host test instead of four more VM boots.
+  `scripts/switch-desktop.sh` follows a wrapper's import, edits the shared host,
+  and rebuilds the named unit, so the script works from a unit's own hostname.
 - `hosts/elitedesk-800-g4/`: the HP EliteDesk 800 G4 Mini profile. Coffee Lake
   with UHD 630, so Intel microcode and `intel-media-driver` instead of NVIDIA.
   It runs Cockpit with `cockpit-machines` and `cockpit-podman`, libvirt, and the
