@@ -21,6 +21,7 @@
     ../../modules/gaming.nix
     ../../modules/multimedia.nix
     ../../modules/sysadmin.nix
+    ../../modules/nix-index.nix
     ../../modules/virtualization.nix
     ../../modules/containers.nix
     ../../modules/auto-upgrade.nix
@@ -140,6 +141,10 @@
   # Backup, network diagnostics and hardware monitoring. The module already
   # carries the package lists, so this host does not repeat them.
   sysadmin.enable = true;
+
+  # Offline `nix-locate` and command-not-found. The daily probe rebuilds the
+  # index only when it is older than a week.
+  nixIndex.enable = true;
 
   # GPU fan curves and monitoring for the RTX 3070.
   services.lact.enable = true;

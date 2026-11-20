@@ -44,6 +44,7 @@ in {
       lsof
       strace
       file
+      lnav         # Log navigator: SQL, timeline and filters over log files
       
       # Version control
       git gh
@@ -59,9 +60,11 @@ in {
       
       # Data processing
       jq yq-go     # JSON/YAML processors
+      jless        # TUI JSON viewer, for documents jq output buries
       
       # Task runner
       just
+      watchexec    # Rerun a command when files change
       
       # Shell prompt
       starship
@@ -73,6 +76,7 @@ in {
       # Security
       age
       gnupg
+      gitleaks     # Scan a tree for committed secrets
       
       # Enhanced CLI Tools
       fzf          # Fuzzy finder (essential for productivity)
@@ -86,6 +90,8 @@ in {
       nix-output-monitor
       nvd
       nix-tree
+      nh           # Rebuild wrapper: prints the closure diff before it switches
+      nix-search-tv # Fuzzy package search over its own cache
     ];
 
     # Helpful aliases for config management
