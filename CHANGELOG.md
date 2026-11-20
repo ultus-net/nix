@@ -59,6 +59,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- `hosts/elitedesk-800-g4/`: the HP EliteDesk 800 G4 Mini profile. Coffee Lake
+  with UHD 630, so Intel microcode and `intel-media-driver` instead of NVIDIA.
+  It runs Cockpit with `cockpit-machines` and `cockpit-podman`, libvirt, and the
+  Podman runtime. The role import is the swappable line, so
+  `scripts/switch-desktop.sh` turns the same host into a desktop test rig.
+- `machines.containers.runtime` selects `docker` or `podman`. Podman adds a
+  Docker-compatible CLI and socket, and `enableDockerCompose` installs
+  `podman-compose` on that runtime. Docker stays the default, so `tower` is
+  unchanged.
 - `modules/cockpit.nix` (`cockpit.enable`): the Cockpit web console on port 9090
   over HTTPS. Every headless host gets it through `roles/base.nix`, and the
   firewall stays closed, so access is `ssh -L 9090:localhost:9090`. Plugins are

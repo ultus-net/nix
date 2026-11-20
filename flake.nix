@@ -146,6 +146,10 @@
         tower = mkSystem ./hosts/tower/default.nix;
         work-laptop = mkSystem ./hosts/work-laptop/default.nix;
 
+        # HP EliteDesk 800 G4 Mini. Serves as a desktop test rig and a dev
+        # server; `scripts/switch-desktop.sh` swaps its role import.
+        elitedesk-800-g4 = mkSystem ./hosts/elitedesk-800-g4/default.nix;
+
         # VM-only preview of the Dux Shell desktop. Not installed on hardware.
         dux-vm = mkSystem ./hosts/dux-vm/default.nix;
 

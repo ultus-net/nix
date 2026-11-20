@@ -20,7 +20,7 @@ is what `scripts/check-layering.py` enforces.
 | `common-packages.nix` | `commonPackages` | nothing until enabled |
 | `multimedia.nix` | `multimedia` | nothing until enabled |
 | `gaming.nix` | `gaming` | nothing until enabled |
-| `containers.nix` | `machines.containers` | nothing until enabled |
+| `containers.nix` | `machines.containers` | nothing until enabled; `machines.containers.runtime` picks Docker or Podman |
 | `virtualization.nix` | `virtualization` | nothing until enabled |
 | `sysadmin.nix` | `sysadmin` | nothing until enabled |
 | `cockpit.nix` | `cockpit` | nothing until enabled; web console on 9090, firewall closed so access is through an SSH tunnel |
