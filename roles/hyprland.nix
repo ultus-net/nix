@@ -1,11 +1,6 @@
 { config, pkgs, lib, ... }:
 {
-  # Hyprland desktop profile (Omarchy-style, opinionated)
-  #
-  # This profile enables the Hyprland desktop environment with Omarchy-inspired modular config.
-  #
-  # NOTE: This requires hyprland.nix to be present in the workspace.
-
+  # Hyprland desktop profile (Omarchy-style, opinionated).
   imports = [
     ../modules/base.nix
     ../modules/common-packages.nix

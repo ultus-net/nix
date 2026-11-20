@@ -154,6 +154,22 @@
             touch $out
           '';
 
+        # Hyprland 0.57 reads Lua from the XDG config directories and ignores
+        # the old .conf dialect. A host that ships .conf boots the stock example
+        # config with no bar and no keybindings, and nothing reports an error.
+        hyprland-config =
+          let
+            cfg = self.nixosConfigurations.hyprland-vm.config;
+          in
+          assert cfg.programs.hyprland.enable;
+          assert cfg.services.displayManager.defaultSession == "hyprland";
+          assert cfg.environment.etc ? "xdg/hypr/hyprland.lua";
+          assert lib.hasInfix "hl.config" cfg.environment.etc."xdg/hypr/looknfeel.lua".text;
+          assert !(cfg.environment.etc ? "xdg/hypr/hyprland.conf");
+          pkgs.runCommand "check-hyprland-config" { } ''
+            touch $out
+          '';
+
         # The sandbox proxy decides every egress from an agent session, so its
         # allowlist matching and its refusal of non-global addresses are
         # exercised without a network.
@@ -186,6 +202,9 @@
 
         # VM-only preview of the Dux Shell desktop. Not installed on hardware.
         dux-vm = mkSystem ./hosts/dux-vm/default.nix;
+
+        # VM-only preview of the Hyprland desktop. Not installed on hardware.
+        hyprland-vm = mkSystem ./hosts/hyprland-vm/default.nix;
 
         # VM-only preview of the Noctalia desktop. Not installed on hardware.
         noctalia-vm = mkSystem ./hosts/noctalia-vm/default.nix;

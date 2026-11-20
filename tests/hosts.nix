@@ -86,6 +86,40 @@ in
     machine.succeed("test -e /etc/systemd/system/display-manager.service")
   '';
 
+  # Hyprland 0.57 loads its Lua config from the XDG config directories. The
+  # test VM has no GPU-backed GL, so the compositor exits even though SDDM
+  # selects the session; the live desktop is checked in the preview VM on real
+  # hardware (USAGE.md). What CI can prove is the wiring and that every Lua
+  # file parses: a malformed config would otherwise fail silently at boot.
+  hyprland-vm = mkHostTest "hyprland-vm" ../hosts/hyprland-vm/default.nix [
+    ({ config, ... }: {
+      assertions = [
+        {
+          assertion = config.programs.hyprland.enable;
+          message = "hyprland-vm must enable programs.hyprland, which provides the session file";
+        }
+        {
+          assertion = config.services.displayManager.defaultSession == "hyprland";
+          message = "hyprland-vm must select the hyprland session";
+        }
+        {
+          assertion = config.services.displayManager.autoLogin.user == "hyprland";
+          message = "hyprland-vm must start the preview session without a greeter";
+        }
+      ];
+    })
+    ({ pkgs, ... }: { environment.systemPackages = [ pkgs.lua ]; })
+  ] ''
+    machine.succeed("test -f /etc/xdg/hypr/hyprland.lua")
+    machine.succeed("test ! -e /etc/xdg/hypr/hyprland.conf")
+    machine.succeed("test -e /etc/systemd/system/display-manager.service")
+    machine.succeed("grep -q 'require(\"looknfeel\")' /etc/xdg/hypr/hyprland.lua")
+
+    # Parse every module. `luac -p` catches a truncated or malformed config
+    # without needing a compositor.
+    machine.succeed("for f in /etc/xdg/hypr/*.lua; do luac -p \"$f\"; done")
+  '';
+
   # The preview host has to prove its desktop wiring installs and that the
   # session starts without a greeter. A Wayland session cannot run in the test
   # VM, so the greeter path is checked at evaluation time instead.
