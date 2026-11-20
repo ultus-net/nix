@@ -2,12 +2,18 @@
 let
   cfg = config.nixIndex;
 
-  # systemd does not expand `$HOME` in ExecCondition, and the user manager has
-  # no guaranteed PATH, so the probe resolves the cache directory itself and
-  # calls `find` by store path.
+  # Both the writer and the probe name this path, because `nix-index` defaults
+  # to it and a probe on any other path would rebuild on every run. It is
+  # pinned rather than derived from `XDG_CACHE_HOME`, so a host that moves its
+  # cache cannot silently break the contract. `%h` is the systemd user specifier
+  # for the home directory; the shell script gets `$HOME` from the user manager.
+  cacheDir = "%h/.cache/nix-index";
+
+  # systemd has no guaranteed PATH for user units, so the probe calls `find` by
+  # store path. Exit 0 runs the rebuild, exit 1 skips it.
   staleProbe = pkgs.writeShellScript "nix-index-stale" ''
     set -eu
-    db="''${XDG_CACHE_HOME:-$HOME/.cache}/nix-index/files"
+    db="$HOME/.cache/nix-index/files"
     if [ ! -e "$db" ]; then
       exit 0
     fi
@@ -36,16 +42,18 @@ in
       default = pkgs.path;
       defaultText = lib.literalExpression "pkgs.path";
       description = ''
-        nixpkgs tree to index. Defaults to the tree this host was built from,
-        so the index matches the packages the host can actually install.
+        nixpkgs tree to index, passed to `nix-index -f`. The default is the
+        tree this host was built from, so the index matches the packages the
+        host can install and no `<nixpkgs>` channel is needed. A host on a
+        fixed channel can point this at its channel path instead.
       '';
     };
   };
 
   config = lib.mkIf cfg.enable {
     # `programs.nix-index` supplies `nix-locate` and the shell hook. The hook
-    # reads the cache this module maintains; without the cache it reports every
-    # miss as not found.
+    # reads `~/.cache/nix-index/files`; without that file it reports every miss
+    # as not found, so this module is what makes the option useful.
     programs.nix-index.enable = true;
 
     systemd.user.services.nix-index-update = {
@@ -53,7 +61,7 @@ in
       serviceConfig = {
         Type = "oneshot";
         ExecCondition = "${staleProbe}";
-        ExecStart = "${pkgs.nix-index}/bin/nix-index -f ${cfg.nixpkgs}";
+        ExecStart = "${pkgs.nix-index}/bin/nix-index -d ${cacheDir} -f ${cfg.nixpkgs}";
         Nice = 19;
         IOSchedulingClass = "idle";
       };

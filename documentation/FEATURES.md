@@ -62,7 +62,9 @@ role that owns the desktop, so the headless role stays headless.
 `nix-index.nix` adds `nix-locate` and the command-not-found hook over a local
 index of the flake's own nixpkgs. The index is expensive to build, so a daily
 user timer runs a `find` probe and rebuilds only when the cache is missing or
-older than `nixIndex.maxAgeDays`.
+older than `nixIndex.maxAgeDays`. Writer and probe both name
+`~/.cache/nix-index`, the path `nix-index` defaults to, so the contract cannot
+drift with `XDG_CACHE_HOME`.
 
 `wayland-utils.nix` is the wlroots session baseline: `wl-clipboard`,
 `pwvucontrol`, `playerctl`, `brightnessctl`, `cliphist`, `satty`, `wlr-randr`
