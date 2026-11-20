@@ -61,9 +61,9 @@
 
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 
-  # All firmware, not just the redistributable subset: the AX211 and the i915
-  # GuC/HuC blobs sit outside it, and this host tracks the latest kernel.
-  hardware.enableAllFirmware = true;
+  # `modules/base.nix` already enables redistributable firmware, which carries
+  # linux-firmware (the AX211 and the i915 GuC/HuC blobs) and sof-firmware.
+  # `enableAllFirmware` would add only unrelated unfree blobs.
 
   # Mesa drives the integrated GPU, iHD gives VA-API decode, and the VPL
   # runtime covers encode. There is no dGPU, so `modules/nvidia.nix` must not

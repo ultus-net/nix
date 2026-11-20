@@ -44,9 +44,9 @@ git clone https://github.com/ultus-net/nix.git /mnt/nix
 ```
 
 When `/nix` is its own volume, clone into the home tree instead, so the store
-mount does not also hold the repository. `hosts/work-laptop` sets
-`machines.autoUpgrade.flakePath` to `/home/hunter/Documents/nix`, so clone
-there:
+mount does not also hold the repository. `hosts/work-laptop` names the clone
+in `machines.autoUpgrade.flakePath`, currently `/home/hunter/Documents/nix`, so
+clone where that option points:
 
 ```bash
 git clone https://github.com/ultus-net/nix.git /mnt/home/hunter/Documents/nix
